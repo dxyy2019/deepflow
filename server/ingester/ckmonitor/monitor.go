@@ -27,9 +27,22 @@ import (
 
 	"github.com/deepflowio/deepflow/server/ingester/common"
 	"github.com/deepflowio/deepflow/server/ingester/config"
+	"github.com/deepflowio/deepflow/server/libs/stats"
+	"github.com/deepflowio/deepflow/server/libs/utils"
 )
 
 var log = logging.MustGetLogger("monitor")
+
+const (
+	EVENT_QUERY                = "Query"
+	EVENT_SELECT_QUERY         = "SelectQuery"
+	EVENT_INSERT_QUERY         = "InsertQuery"
+	EVENT_QUERY_CACHE_HITS     = "QueryCacheHits"
+	EVENT_QUERY_CACHE_MISSES   = "QueryCacheMissess"
+	EVENT_QUERY_TIME_MS        = "QueryTimeMicroseconds"
+	EVENT_SELECT_QUERY_TIME_MS = "SelectQueryTimeMicroseconds"
+	EVENT_INSERT_QUERY_TIME_MS = "InsertQueryTimeMicroseconds"
+)
 
 type Monitor struct {
 	cfg           *config.Config
@@ -37,8 +50,95 @@ type Monitor struct {
 
 	Conns              common.DBs
 	Addrs              []string
+	eventMonitors      []*EventMonitor
 	username, password string
 	exit               bool
+}
+
+type EventMonitor struct {
+	addr, username, password string
+	conn                     *sql.DB
+	current, last            EventCounter
+	utils.Closable
+}
+
+type EventCounter struct {
+	Query             uint64  `statsd:"query"`
+	SelectQuery       uint64  `statsd:"select-query"`
+	InsertQuery       uint64  `statsd:"insert-query"`
+	QueryCacheHits    uint64  `statsd:"query-cache-hits"`
+	QueryCacheMisses  uint64  `statsd:"query-cache-misses"`
+	QueryHitPercent   float64 `statsd:"query-hit-percent"`
+	QueryTimeMs       uint64  `statsd:"query-time-ms"`
+	SelectQueryTimeMs uint64  `statsd:"select-query-time-ms"`
+	InsertQueryTimeMs uint64  `statsd:"insert-query-time-ms"`
+}
+
+func (e *EventMonitor) getCurrentCounter() error {
+	if e.conn == nil {
+		conn, err := common.NewCKConnection(e.addr, e.username, e.password)
+		if err != nil {
+			return err
+		}
+		e.conn = conn
+	}
+	rows, err := e.conn.Query(
+		fmt.Sprintf("SELECT event,value FROM system.events where event in ('%s','%s','%s','%s','%s','%s','%s','%s')",
+			EVENT_QUERY, EVENT_SELECT_QUERY, EVENT_INSERT_QUERY, EVENT_QUERY_CACHE_HITS, EVENT_QUERY_CACHE_MISSES, EVENT_QUERY_TIME_MS, EVENT_SELECT_QUERY_TIME_MS, EVENT_INSERT_QUERY_TIME_MS))
+	if err != nil {
+		log.Warningf("get ck event failed: %s", err)
+		return err
+	}
+
+	var event string
+	var value uint64
+	for rows.Next() {
+		err := rows.Scan(&event, &value)
+		if err != nil {
+			log.Warningf("get event failed: %s", err)
+			return err
+		}
+		switch event {
+		case EVENT_QUERY:
+			e.current.Query = value
+		case EVENT_SELECT_QUERY:
+			e.current.SelectQuery = value
+		case EVENT_INSERT_QUERY:
+			e.current.InsertQuery = value
+		case EVENT_QUERY_CACHE_HITS:
+			e.current.QueryCacheHits = value
+		case EVENT_QUERY_CACHE_MISSES:
+			e.current.QueryCacheMisses = value
+		case EVENT_QUERY_TIME_MS:
+			e.current.QueryTimeMs = value
+		case EVENT_SELECT_QUERY_TIME_MS:
+			e.current.SelectQueryTimeMs = value
+		case EVENT_INSERT_QUERY_TIME_MS:
+			e.current.InsertQueryTimeMs = value
+		}
+	}
+	return nil
+}
+
+func (e *EventMonitor) GetCounter() interface{} {
+	if err := e.getCurrentCounter(); err != nil {
+		return &EventCounter{}
+	}
+	counter := &EventCounter{
+		Query:             e.current.Query - e.last.Query,
+		SelectQuery:       e.current.SelectQuery - e.last.SelectQuery,
+		InsertQuery:       e.current.InsertQuery - e.last.InsertQuery,
+		QueryCacheHits:    e.current.QueryCacheHits - e.last.QueryCacheHits,
+		QueryCacheMisses:  e.current.QueryCacheMisses - e.last.QueryCacheMisses,
+		QueryTimeMs:       e.current.QueryTimeMs - e.last.QueryTimeMs,
+		SelectQueryTimeMs: e.current.SelectQueryTimeMs - e.last.SelectQueryTimeMs,
+		InsertQueryTimeMs: e.current.InsertQueryTimeMs - e.last.InsertQueryTimeMs,
+	}
+	if counter.SelectQuery > 0 {
+		counter.QueryHitPercent = float64(counter.QueryCacheHits) / float64(counter.SelectQuery)
+	}
+	e.last, e.current = e.current, EventCounter{}
+	return counter
 }
 
 type DiskInfo struct {
@@ -64,6 +164,12 @@ func NewCKMonitor(cfg *config.Config) (*Monitor, error) {
 	m.Conns, err = common.NewCKConnections(m.Addrs, m.username, m.password)
 	if err != nil {
 		return nil, err
+	}
+
+	m.eventMonitors = make([]*EventMonitor, len(m.Addrs))
+	for i, addr := range m.Addrs {
+		m.eventMonitors[i] = &EventMonitor{addr: addr, username: m.username, password: m.password}
+		common.RegisterCountableForIngester("monitor_event", m.eventMonitors[i], stats.OptionStatTags{"ck-addr": addr})
 	}
 
 	return m, nil
