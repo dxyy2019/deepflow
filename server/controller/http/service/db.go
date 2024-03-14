@@ -28,21 +28,18 @@ import (
 )
 
 func CreateDatabase(dataCreate model.DatabaseCreate, mysqlCfg mysqlcfg.MySqlConfig) (database string, err error) {
-	log.Infof("create organization (id: %s) databases", dataCreate.OrganizationID)
-	database = common.OrganizationIDToDatabaseName(dataCreate.OrganizationID)
-	cfg := mysqlCfg
-	cfg.Database = database
-	existed, err := migrator.CreateDatabase(cfg)
+	log.Infof("create org (id: %s) data", dataCreate.ORGID)
+	cfg := common.ReplaceConfigDatabaseName(mysqlCfg, dataCreate.ORGID)
+	existed, err := migrator.CreateDatabase(cfg) // TODO use orgID to create db
 	if existed {
 		err = errors.New(fmt.Sprintf("database (name: %s) already exists", database))
 	}
 	return
 }
 
-func DeleteDatabase(organizationID string, mysqlCfg mysqlcfg.MySqlConfig) (err error) {
-	log.Infof("delete organization (id: %s) databases", organizationID)
-	id, _ := strconv.Atoi(organizationID)
-	cfg := mysqlCfg
-	cfg.Database = common.OrganizationIDToDatabaseName(id)
+func DeleteDatabase(orgID string, mysqlCfg mysqlcfg.MySqlConfig) (err error) {
+	log.Infof("delete org (id: %s) data", orgID)
+	id, _ := strconv.Atoi(orgID)
+	cfg := common.ReplaceConfigDatabaseName(mysqlCfg, id)
 	return migrator.DropDatabase(cfg)
 }
