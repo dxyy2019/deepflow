@@ -58,7 +58,7 @@ func NewProcess(wholeCache *cache.Cache, cloudData []cloudmodel.Process) *Proces
 		](
 			ctrlrcommon.RESOURCE_TYPE_PROCESS_EN,
 			wholeCache,
-			db.NewProcess(),
+			db.NewProcess().SetORG(wholeCache.GetORG()),
 			wholeCache.DiffBaseDataSet.Process,
 			cloudData,
 		),
@@ -80,7 +80,7 @@ func (p *Process) generateDBItemToAdd(cloudItem *cloudmodel.Process) (*mysql.Pro
 		deviceID = podID
 	} else {
 		var vtap *mysql.VTap
-		if err := mysql.Db.Where("id = ?", cloudItem.VTapID).First(&vtap).Error; err != nil {
+		if err := p.org.DB.Where("id = ?", cloudItem.VTapID).First(&vtap).Error; err != nil { // TODO @weiqiang 避免除资源本身增删改的 db 操作
 			log.Error(err)
 		}
 		if vtap != nil {
