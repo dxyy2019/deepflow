@@ -29,17 +29,23 @@ import (
 
 func CreateDatabase(dataCreate model.DatabaseCreate, mysqlCfg mysqlcfg.MySqlConfig) (database string, err error) {
 	log.Infof("create org (id: %s) data", dataCreate.ORGID)
+	// create org database and init tables
 	cfg := common.ReplaceConfigDatabaseName(mysqlCfg, dataCreate.ORGID)
 	existed, err := migrator.CreateDatabase(cfg) // TODO use orgID to create db
 	if existed {
 		err = errors.New(fmt.Sprintf("database (name: %s) already exists", database))
 	}
+
+	// TODO call master controller to start recorder id mng and cleaner
 	return
 }
 
 func DeleteDatabase(orgID string, mysqlCfg mysqlcfg.MySqlConfig) (err error) {
 	log.Infof("delete org (id: %s) data", orgID)
+	// delete org database
 	id, _ := strconv.Atoi(orgID)
 	cfg := common.ReplaceConfigDatabaseName(mysqlCfg, id)
+
+	// TODO call master controller to stop recorder id mng and cleaner
 	return migrator.DropDatabase(cfg)
 }
