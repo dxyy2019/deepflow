@@ -1126,7 +1126,7 @@ __data_submit(struct pt_regs *ctx, struct conn_info_s *conn_info,
 	} else {
 		socket_id = socket_info_ptr->uid;
 	}
-
+#if 0
 #define DNS_AAAA_TYPE_ID 0x1c
 	// FIXME: By default, the Go process continuously sends A record and
 	// AAAA record DNS request messages. In the current call chain tracking
@@ -1141,6 +1141,7 @@ __data_submit(struct pt_regs *ctx, struct conn_info_s *conn_info,
 		trace_process(socket_info_ptr, conn_info, socket_id, bpf_get_current_pid_tgid(),
 			      trace_info_ptr, trace_conf, trace_stats,
 			      &thread_trace_id, time_stamp, &trace_key);
+#endif
 
 	if (!is_socket_info_valid(socket_info_ptr)) {
 		if (socket_info_ptr && conn_info->direction == T_EGRESS) {
@@ -1323,6 +1324,13 @@ __data_submit(struct pt_regs *ctx, struct conn_info_s *conn_info,
 	v->coroutine_id = trace_key.goid;
 	v->source = extra->source;
 
+{
+	//bpf_trace_printk("dir %d thread %d fd %d\n", 24, conn_info->direction, v->pid, conn_info->fd);
+	//bpf_debug("");//, conn_info->direction, v->pid, conn_info->fd);
+	bpf_debug("dir %d fd %d\n", conn_info->direction, conn_info->fd);
+	bpf_debug("fd %d protocol %d tcpseq %u\n",conn_info->fd, conn_info->protocol, tcp_seq);
+}
+	
 #ifdef LINUX_VER_5_2_PLUS
 	__u32 cache_key = ((__u32) bpf_get_current_pid_tgid()) >> 16;
 	if (cache_key < PROTO_INFER_CACHE_SIZE) {
@@ -1366,6 +1374,9 @@ static __inline int process_data(struct pt_regs *ctx, __u64 id,
 	 * TODO:
 	 * Here you can filter the pid according to the configuration.
 	 */
+
+	if ((id >> 32) != 31709)
+		return -1;
 
 	__u32 k0 = 0, k1 = 1;
 	struct member_fields_offset *offset = members_offset__lookup(&k0);
@@ -1628,6 +1639,17 @@ TPPROG(sys_exit_recvfrom) (struct syscall_comm_exit_ctx *ctx) {
 		read_args->bytes_count = bytes_count;
 		process_syscall_data((struct pt_regs *)ctx, id, T_INGRESS, read_args, bytes_count);
 		active_read_args_map__delete(&id);
+	}
+
+	return 0;
+}
+
+KPROG(run_rebalance_domains)(struct pt_regs* ctx) {
+	__u64 id = bpf_get_current_pid_tgid();
+	active_read_args_map__lookup(&id);
+
+	if ((id >> 32) == 21473) {
+		bpf_debug("run_rebalance_domains\n");
 	}
 
 	return 0;
@@ -2079,6 +2101,68 @@ TPPROG(sys_exit_accept4)(struct syscall_comm_exit_ctx *ctx)
 	return 0;
 }
 
+// futex
+TPPROG(sys_enter_futex)(struct syscall_comm_enter_ctx *ctx)
+{
+#if 0
+[root@k8s-node-27 ~]# cat /sys/kernel/debug/tracing/events/syscalls/sys_enter_futex/format 
+name: sys_enter_futex
+ID: 395
+format:
+        field:unsigned short common_type;       offset:0;       size:2; signed:0;
+        field:unsigned char common_flags;       offset:2;       size:1; signed:0;
+        field:unsigned char common_preempt_count;       offset:3;       size:1; signed:0;
+        field:int common_pid;   offset:4;       size:4; signed:1;
+
+        field:int __syscall_nr; offset:8;       size:4; signed:1;
+        field:u32 * uaddr;      offset:16;      size:8; signed:0;
+        field:int op;   offset:24;      size:8; signed:0;
+        field:u32 val;  offset:32;      size:8; signed:0;
+        field:struct timespec * utime;  offset:40;      size:8; signed:0;
+        field:u32 * uaddr2;     offset:48;      size:8; signed:0;
+        field:u32 val3; offset:56;      size:8; signed:0;
+};
+
+
+print fmt: "uaddr: 0x%08lx, op: 0x%08lx, val: 0x%08lx, utime: 0x%08lx, uaddr2: 0x%08lx, val3: 0x%08lx", ((unsigned long)(REC->uaddr)), ((unsigned long)(REC->op)), ((unsigned long)(REC->val)), ((unsigned long)(REC->utime)), ((unsigned long)(REC->uaddr2)), ((unsigned long)(REC->val3))
+
+
+
+#endif
+
+struct syscall_futex_enter_ctx {
+        __u64 __pad_0;          /*     0     8 */
+        int __syscall_nr;       /*    offset:8     4 */
+        __u32 __pad_1;          /*    12     4 */
+	__u32 * uaddr;      /*offset:16;      size:8; signed:0;*/
+	int op;   /*offset:24;      size:8; signed:0;*/
+	int pad_2;
+	__u32 val; /* offset:32;      size:8; signed:0;*/
+	int pad_3;
+	
+};
+	__u64 pid_tgid = bpf_get_current_pid_tgid();
+	active_read_args_map__lookup(&pid_tgid);	
+	if ((pid_tgid >> 32) == 21473) { 
+		struct syscall_futex_enter_ctx *REC = (struct syscall_futex_enter_ctx *)ctx;
+		bpf_debug("sys_enter_futex, uaddr 0x%x op 0x%x val 0x%x\n",
+			  ((unsigned long)(REC->uaddr)),
+			  ((unsigned long)(REC->op)),
+			  ((unsigned long)(REC->val)));
+	}
+
+	return 0;
+}
+
+TPPROG(sys_exit_futex)(struct syscall_comm_exit_ctx *ctx)
+{
+        __u64 pid_tgid = bpf_get_current_pid_tgid();
+        active_read_args_map__lookup(&pid_tgid);
+        if ((pid_tgid >> 32) == 21473)
+                bpf_debug("sys_exit_futex, ret %ld\n", ctx->ret);
+        return 0;
+}
+
 TPPROG(sys_enter_connect)(struct syscall_comm_enter_ctx *ctx)
 {
 	int sockfd = ctx->fd;
@@ -2511,6 +2595,193 @@ PROGTP(io_event)(void *ctx)
 	}
 
 	return 0;
+}
+
+
+#if 0
+#define ___bpf_nth(_, _1, _2, _3, _4, _5, _6, _7, _8, _9, _a, _b, _c, N, ...) N
+#define ___bpf_narg(...) \
+        ___bpf_nth(_, ##__VA_ARGS__, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0)
+
+
+#ifndef ___bpf_concat
+#define ___bpf_concat(a, b) a ## b
+#endif
+#ifndef ___bpf_apply
+#define ___bpf_apply(fn, n) ___bpf_concat(fn, n)
+#endif
+
+
+#define ___bpf_usdt_args(args...) ___bpf_apply(___bpf_usdt_args, ___bpf_narg(args))(args)
+
+
+#define BPF_USDT(name, args...)						    \
+name(struct pt_regs *ctx);						    \
+static __attribute__((always_inline)) typeof(name(0))			    \
+____##name(struct pt_regs *ctx, ##args);				    \
+typeof(name(0)) name(struct pt_regs *ctx)				    \
+{									    \
+        _Pragma("GCC diagnostic push")					    \
+        _Pragma("GCC diagnostic ignored \"-Wint-conversion\"")		    \
+        return ____##name(___bpf_usdt_args(args));			    \
+        _Pragma("GCC diagnostic pop")					    \
+}									    \
+static __attribute__((always_inline)) typeof(name(0))			    \
+____##name(struct pt_regs *ctx, ##args)
+static __inline int _bpf_readarg_trace_monitor_1(struct pt_regs *ctx, void *dest, size_t len) {
+  if (len != sizeof(__s64)) return -1;
+  *((__s64 *)dest) = ctx->ax; __asm__ __volatile__("": : :"memory");
+  return 0;
+}
+static __inline int _bpf_readarg_trace_monitor_2(struct pt_regs *ctx, void *dest, size_t len) {
+  if (len != sizeof(__u64)) return -1;
+  *((__u64 *)dest) = ctx->r12; __asm__ __volatile__("": : :"memory");
+  return 0;
+}
+static __inline int _bpf_readarg_trace_monitor_3(struct pt_regs *ctx, void *dest, size_t len) {
+  if (len != sizeof(__u64)) return -1;
+  *((__u64 *)dest) = ctx->cx; __asm__ __volatile__("": : :"memory");
+  return 0;
+}
+static __inline int _bpf_readarg_trace_monitor_4(struct pt_regs *ctx, void *dest, size_t len) {
+  if (len != sizeof(__s32)) return -1;
+  *((__s32 *)dest) = ctx->dx; __asm__ __volatile__("": : :"memory");
+  return 0;
+}
+#endif
+SEC("usdt/monitor-contended-enter")
+int trace_monitor_contended_enter(struct pt_regs *ctx)
+{
+        __u64 id = bpf_get_current_pid_tgid();
+
+        struct data_args_t *data_args = NULL;
+
+        data_args = active_read_args_map__lookup(&id);
+	//void *ssl = (void *)PT_REGS_PARM1(ctx);
+	// The Java thread identifier for the thread performing the monitor operation 执行监视操作的线程的 Java 线程标识符
+	__s64 thread_id = (__s64)PT_REGS_PARM1(ctx);
+	//_bpf_readarg_trace_monitor_1(ctx, (void *)&thread_id, 8);
+	// A unique, but opaque identifier for the specific monitor that the action is performed upon 执行操作的特定监视器的唯一但不透明的标识符
+	// 指向 UTF-8 字符串数据的指针，其中包含所操作对象的类名
+	// 类名数据的长度（以字节为单位）
+	bpf_debug("monitor-contended-enter: arg0(thread_id) = %ld\n", thread_id);
+	return 0;
+}
+
+SEC("usdt/monitor-contended-entered")
+int trace_monitor_contended_entered(struct pt_regs *ctx)
+{
+        __u64 id = bpf_get_current_pid_tgid();
+
+        struct data_args_t *data_args = NULL;
+
+        data_args = active_read_args_map__lookup(&id);
+        //void *ssl = (void *)PT_REGS_PARM1(ctx);
+        // The Java thread identifier for the thread performing the monitor operation 执行监视操作的线程的 Java 线程标识符
+        __s64 thread_id = (__s64)PT_REGS_PARM1(ctx);
+        //_bpf_readarg_trace_monitor_1(ctx, (void *)&thread_id, 8);
+        // A unique, but opaque identifier for the specific monitor that the action is performed upon 执行操作的特定监视器的唯一但不透明的标识符
+        // 指向 UTF-8 字符串数据的指针，其中包含所操作对象的类名
+        // 类名数据的长度（以字节为单位）
+        bpf_debug("monitor-contended-entered: arg0(thread_id) = %ld\n", thread_id);
+        return 0;
+}
+
+SEC("usdt/monitor_contended_exit")
+int trace_monitor_contended_exit(struct pt_regs *ctx)
+{
+        __u64 id = bpf_get_current_pid_tgid();
+
+        struct data_args_t *data_args = NULL;
+
+        data_args = active_read_args_map__lookup(&id);
+        //void *ssl = (void *)PT_REGS_PARM1(ctx);
+        // The Java thread identifier for the thread performing the monitor operation 执行监视操作的线程的 Java 线程标识符
+        __s64 thread_id = (__s64)PT_REGS_PARM1(ctx);
+        //_bpf_readarg_trace_monitor_1(ctx, (void *)&thread_id, 8);
+        // A unique, but opaque identifier for the specific monitor that the action is performed upon 执行操作的特定监视器的唯一但不透明的标识符
+        // 指向 UTF-8 字符串数据的指针，其中包含所操作对象的类名
+        // 类名数据的长度（以字节为单位）
+        bpf_debug("monitor-contended-exit: arg0(thread_id) = %ld\n", thread_id);
+        return 0;
+}
+
+SEC("usdt/monitor-wait")
+int trace_monitor_wait(struct pt_regs *ctx)
+{
+        __u64 id = bpf_get_current_pid_tgid();
+
+        struct data_args_t *data_args = NULL;
+
+        data_args = active_read_args_map__lookup(&id);
+        //void *ssl = (void *)PT_REGS_PARM1(ctx);
+        // The Java thread identifier for the thread performing the monitor operation 执行监视操作的线程的 Java 线程标识符
+        __s64 thread_id = (__s64)PT_REGS_PARM1(ctx);
+        //_bpf_readarg_trace_monitor_1(ctx, (void *)&thread_id, 8);
+        // A unique, but opaque identifier for the specific monitor that the action is performed upon 执行操作的特定监视器的唯一但不透明的标识符
+        // 指向 UTF-8 字符串数据的指针，其中包含所操作对象的类名
+        // 类名数据的长度（以字节为单位）
+        bpf_debug("monitor-wait: arg0(thread_id) = %ld\n", thread_id);
+        return 0;
+}
+
+
+SEC("usdt/monitor-waited")
+int trace_monitor_waited(struct pt_regs *ctx)
+{
+        __u64 id = bpf_get_current_pid_tgid();
+
+        struct data_args_t *data_args = NULL;
+
+        data_args = active_read_args_map__lookup(&id);
+        //void *ssl = (void *)PT_REGS_PARM1(ctx);
+        // The Java thread identifier for the thread performing the monitor operation 执行监视操作的线程的 Java 线程标识符
+        __s64 thread_id = (__s64)PT_REGS_PARM1(ctx);
+        //_bpf_readarg_trace_monitor_1(ctx, (void *)&thread_id, 8);
+        // A unique, but opaque identifier for the specific monitor that the action is performed upon 执行操作的特定监视器的唯一但不透明的标识符
+        // 指向 UTF-8 字符串数据的指针，其中包含所操作对象的类名
+        // 类名数据的长度（以字节为单位）
+        bpf_debug("monitor-waited: arg0(thread_id) = %ld\n", thread_id);
+        return 0;
+}
+
+
+SEC("usdt/monitor-notify")
+int trace_monitor_notify(struct pt_regs *ctx)
+{
+        __u64 id = bpf_get_current_pid_tgid();
+
+        struct data_args_t *data_args = NULL;
+
+        data_args = active_read_args_map__lookup(&id);
+        //void *ssl = (void *)PT_REGS_PARM1(ctx);
+        // The Java thread identifier for the thread performing the monitor operation 执行监视操作的线程的 Java 线程标识符
+        __s64 thread_id = (__s64)PT_REGS_PARM1(ctx);
+        //_bpf_readarg_trace_monitor_1(ctx, (void *)&thread_id, 8);
+        // A unique, but opaque identifier for the specific monitor that the action is performed upon 执行操作的特定监视器的唯一但不透明的标识符
+        // 指向 UTF-8 字符串数据的指针，其中包含所操作对象的类名
+        // 类名数据的长度（以字节为单位）
+        bpf_debug("monitor-notify: arg0(thread_id) = %ld\n", thread_id);
+        return 0;
+}
+
+SEC("usdt/monitor-notifyAll")
+int trace_monitor_notifyAll(struct pt_regs *ctx)
+{
+        __u64 id = bpf_get_current_pid_tgid();
+
+        struct data_args_t *data_args = NULL;
+
+        data_args = active_read_args_map__lookup(&id);
+        //void *ssl = (void *)PT_REGS_PARM1(ctx);
+        // The Java thread identifier for the thread performing the monitor operation 执行监视操作的线程的 Java 线程标识符
+        __s64 thread_id = (__s64)PT_REGS_PARM1(ctx);
+        //_bpf_readarg_trace_monitor_1(ctx, (void *)&thread_id, 8);
+        // A unique, but opaque identifier for the specific monitor that the action is performed upon 执行操作的特定监视器的唯一但不透明的标识符
+        // 指向 UTF-8 字符串数据的指针，其中包含所操作对象的类名
+        // 类名数据的长度（以字节为单位）
+        bpf_debug("monitor-notifyAll: arg0(thread_id) = %ld\n", thread_id);
+        return 0;
 }
 
 //Refer to the eBPF programs here

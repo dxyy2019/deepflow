@@ -70,4 +70,7 @@ int program__attach_perf_event(int prog_fd, uint32_t ev_type,
 			       int *attach_fds,
 			       int fds_len);
 int program__detach_perf_event(int *attach_fds, int len);
+int program__attach_usdt(void *prog, bool retprobe, pid_t pid,
+                         const char *binary_path,
+                         size_t func_offset, char *ev_name, void **ret_link);
 #endif /* _BPF_PROBE_H_ */

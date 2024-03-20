@@ -306,7 +306,8 @@ static enum bpf_prog_type get_prog_type(struct sec_desc *desc)
 	if (!memcmp(desc->name, "kprobe/", 7) ||
 	    !memcmp(desc->name, "kretprobe/", 10) ||
 	    !memcmp(desc->name, "uprobe/", 7) ||
-	    !memcmp(desc->name, "uretprobe/", 10)) {
+	    !memcmp(desc->name, "uretprobe/", 10) ||
+	    !memcmp(desc->name, "usdt/", 5)) {
 		prog_type = BPF_PROG_TYPE_KPROBE;
 	} else if (!memcmp(desc->name, "tracepoint/", 11)) {
 		prog_type = BPF_PROG_TYPE_TRACEPOINT;

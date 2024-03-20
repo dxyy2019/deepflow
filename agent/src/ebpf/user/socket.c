@@ -131,6 +131,7 @@ static void socket_tracer_set_probes(struct tracer_probes_conf *tps)
 	probes_set_enter_symbol(tps, "__sys_sendmmsg");
 	probes_set_enter_symbol(tps, "__sys_recvmsg");
 	probes_set_enter_symbol(tps, "__sys_recvmmsg");
+//	probes_set_enter_symbol(tps, "run_rebalance_domains");
 
 	if (k_version == KERNEL_VERSION(3, 10, 0)) {
 		/*
@@ -148,6 +149,9 @@ static void socket_tracer_set_probes(struct tracer_probes_conf *tps)
 
 	/* tracepoints */
 	index = 0;
+
+ //	tps_set_symbol(tps, "tracepoint/syscalls/sys_enter_futex");
+//	tps_set_symbol(tps, "tracepoint/syscalls/sys_exit_futex");
 
 	/*
 	 * 由于在Linux 4.17+ sys_write, sys_read, sys_sendto, sys_recvfrom
@@ -708,8 +712,8 @@ static void reader_raw_cb(void *cookie, void *raw, int raw_size)
 #endif
 
 	struct reader_forward_info *fwd_info = cookie;
-	ebpf_debug(stdout, "* fwd cpu %d -> queue %ld\n",
-		   fwd_info->cpu_id, fwd_info->queue_id);
+	//fprintf(stdout, "* fwd cpu %d -> queue %ld\n",
+	//	   fwd_info->cpu_id, fwd_info->queue_id);
 	struct bpf_tracer *tracer = g_tracer;
 	struct event_meta *ev_meta = raw;
 
@@ -2111,6 +2115,7 @@ int running_socket_tracer(tracer_callback_t handle,
 		return ret;
 	}
 
+	usdt_test();
 	return 0;
 }
 

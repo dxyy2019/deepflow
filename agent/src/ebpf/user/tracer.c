@@ -23,6 +23,7 @@
 #include <sys/epoll.h>
 #include <bcc/libbpf.h>
 #include <bcc/perf_reader.h>
+#include <bcc/bcc_usdt.h>
 #include "config.h"
 #include "types.h"
 #include "clib.h"
@@ -873,6 +874,7 @@ int tracer_hooks_process(struct bpf_tracer *tracer, enum tracer_hook_type type,
 {
 	int (*probe_fun) (struct probe * p) = NULL;
 	int (*tracepoint_fun) (struct tracepoint * p) = NULL;
+	
 	if (type == HOOK_ATTACH) {
 		probe_fun = probe_attach;
 		tracepoint_fun = tracepoint_attach;
@@ -1581,6 +1583,167 @@ bool is_feature_matched(int feature, const char *path)
 	return !error;
 }
 
+//       callback(loc.bin_path_.c_str(), p->attached_to_->c_str(), loc.address_,
+//               pid_.value_or(-1));
+/*
+static void usdt_uprobe_cb(const char *path, const char *probe_name, uint64_t address, int pid)
+{
+	fprintf(stdout, "path %s probe_name %s address 0x%lx pid %d\n+ -------- +\n",
+                path,
+                probe_name,
+                address,
+		pid);
+        fflush(stdout);
+}
+*/
+static void usdt_cb(struct bcc_usdt *usdt)
+{
+
+        fprintf(stdout, "provider %s\nname %s\nbinpath %s\nsemaphore %lu\nnum_locations %d\nnum_arguments %d\nsemaphore_offset %lu\n+ -------- +\n",
+                usdt->provider,
+                usdt->name,
+                usdt->bin_path,
+                usdt->semaphore,
+                usdt->num_locations,
+                usdt->num_arguments,
+                usdt->semaphore_offset);
+        fflush(stdout);
+}
+
+#if 0
+StatusTuple BPF::attach_usdt_without_validation(const USDT& u, pid_t pid) {
+  auto& probe = *static_cast<::USDT::Probe*>(u.probe_.get());
+  if (!uprobe_ref_ctr_supported() && !probe.enable(u.probe_func_))
+    return StatusTuple(-1, "Unable to enable USDT %s", u.print_name().c_str());
+
+  bool failed = false;
+  std::string err_msg;
+  int cnt = 0;
+  for (const auto& loc : probe.locations_) {
+    auto res = attach_uprobe(loc.bin_path_, std::string(), u.probe_func_,
+                             loc.address_, BPF_PROBE_ENTRY, pid, 0,
+                             probe.semaphore_offset());
+    if (!res.ok()) {
+      failed = true;
+      err_msg += "USDT " + u.print_name() + " at " + loc.bin_path_ +
+                  " address " + std::to_string(loc.address_);
+      err_msg += ": " + res.msg() + "\n";
+      break;
+    }
+    cnt++;
+  }
+  if (failed) {
+    for (int i = 0; i < cnt; i++) {
+      auto res = detach_uprobe(probe.locations_[i].bin_path_, std::string(),
+                               probe.locations_[i].address_, BPF_PROBE_ENTRY, pid);
+      if (!res.ok())
+        err_msg += "During clean up: " + res.msg() + "\n";
+    }
+    return StatusTuple(-1, err_msg);
+  } else {
+    return StatusTuple::OK();
+  }
+}
+#endif
+static void usdt_uprobe_attach_cb(const char *path, const char *attach_to, uint64_t addr, int pid)
+{
+/*
+path: /proc/1371/root/usr/share/elasticsearch/jdk/lib/server/libjvm.so
+attach_to: trace_monitor
+addess: 0xc5b647
+pid: 1371
+path: /proc/1371/root/usr/share/elasticsearch/jdk/lib/server/libjvm.so
+attach_to: trace_start
+addess: 0xf72af9
+pid: 1371
+*/
+	printf("path: %s\nattach_to: %s\naddess: 0x%lx\npid: %d\n", path, attach_to, addr, pid);
+	struct bpf_tracer *tracer = find_bpf_tracer(SK_TRACER_NAME);
+        struct ebpf_prog *prog;
+        int fd = bpf_get_program_fd(tracer->obj, attach_to, (void **)&prog);
+        if (fd < 0) {
+                ebpf_info
+                    ("fun: %s, bpf_get_program_fd failed, usdt attach to:%s.\n",
+                     __func__, attach_to);
+                return;
+        }
+
+	struct ebpf_link *link = NULL;
+	int ret = program__attach_usdt(prog, false, pid, path, addr, (char *)attach_to, &link);
+        if (ret != 0) {
+                ebpf_warning
+                    ("program__attach_usdt failed, path: %s\nattach_to: %s\naddess: 0x%lx\npid: %d\n", path, attach_to, addr, pid);
+        }
+}
+
+static void usdt_uprobe_detach_cb(const char *path, const char *attach_to, uint64_t addr, int pid)
+{
+        printf("path: %s\nattach_to: %s\naddess: 0x%lx\npid: %d\n", path, attach_to, addr, pid);
+}
+
+static void *usdt_set_probes(int pid)
+{
+	printf("usdt_test pid %d\n", pid);
+        void *context = bcc_usdt_new_frompid(pid, NULL);
+
+
+#if 0
+    Name: monitor__contended__exit
+    Name: monitor__notify
+    Name: monitor__notifyAll
+    Name: monitor__contended__entered
+    Name: monitor__contended__enter
+    Name: monitor__waited
+    Name: monitor__waited
+    Name: monitor__wait
+#endif
+	bcc_usdt_enable_probe(context, "monitor__contended__entered", "trace_monitor_contended_entered");
+	bcc_usdt_enable_probe(context, "monitor__contended__exit", "trace_monitor_contended_exit");
+	bcc_usdt_enable_probe(context, "monitor__notify", "trace_monitor_notify");
+	bcc_usdt_enable_probe(context, "monitor__notifyAll", "trace_monitor_notifyAll");
+	bcc_usdt_enable_probe(context, "monitor__contended__enter", "trace_monitor_contended_enter");
+	bcc_usdt_enable_probe(context, "monitor__waited", "trace_monitor_waited");
+	bcc_usdt_enable_probe(context, "monitor__waite", "trace_monitor_waite");
+
+
+
+
+	struct bcc_usdt_location location;
+	bcc_usdt_get_location(context, "hotspot", "monitor__contended__entered", 0, &location);
+	printf("address 0x%lx bin_path %s\n", location.address, location.bin_path);
+
+	// 生成文件
+	struct bcc_usdt_argument argument;
+	bcc_usdt_get_argument(context, "hotspot", "monitor__contended__entered", 0, 0, &argument);
+#if 0
+	printf("size %d\nvalid %d\nconstant %ld\nderef_offset %d\nderef_ident %s\nbase_register_name %s\nindex_register_name %s\nscale %d\n",
+		argument.size, argument.valid, argument.constant, argument.deref_offset, argument.deref_ident,
+		argument.base_register_name, argument.index_register_name, argument.scale);	
+#endif
+
+	//bcc_usdt_foreach_uprobe(context, usdt_uprobe_cb);
+#if 0
+const char *bcc_usdt_get_probe_argctype(
+  void *ctx, const char* probe_name, const int arg_index
+) 
+#endif
+	const char *arg0 = bcc_usdt_get_probe_argctype(context, "monitor__contended__entered", 0);
+	printf("arg0:%s\n", arg0);
+	const char *arg1 = bcc_usdt_get_probe_argctype(context, "monitor__contended__entered", 1);
+	printf("arg1:%s\n", arg1);
+	const char *args = bcc_usdt_genargs(&context, 1);
+	printf("----\n%s\n---\n", args);
+        //bcc_usdt_close(context);
+
+	return context;
+}
+
+void usdt_test(void)
+{
+	void *usdt = usdt_set_probes(31709);
+	bcc_usdt_foreach_uprobe(usdt, usdt_uprobe_attach_cb);
+}
+
 int bpf_tracer_init(const char *log_file, bool is_stdout)
 {
 	init_list_head(&extra_waiting_head);
@@ -1594,6 +1757,7 @@ int bpf_tracer_init(const char *log_file, bool is_stdout)
 			return ETR_INVAL;
 		}
 	}
+
 
 	int err;
 	if (max_locked_memory_set_unlimited() != 0)

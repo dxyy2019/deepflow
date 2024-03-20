@@ -197,6 +197,14 @@ int program__attach_kprobe(void *prog,
 				     "kprobe", 0, pid, maxactive, ret_link);
 }
 
+int program__attach_usdt(void *prog, bool retprobe, pid_t pid,
+			 const char *binary_path,
+			 size_t func_offset, char *ev_name, void **ret_link)
+{
+	return program__attach_uprobe(prog, retprobe, pid, binary_path,
+				      func_offset, ev_name, ret_link);
+}
+
 struct ebpf_link *program__attach_tracepoint(void *prog)
 {
 	// e.g.:

@@ -557,7 +557,7 @@ fn main() {
 
         if running_socket_tracer(
             socket_trace_callback, /* Callback interface rust -> C */
-            1, /* Number of worker threads, indicating how many user-space threads participate in data processing */
+            8, /* Number of worker threads, indicating how many user-space threads participate in data processing */
             128, /* Number of page frames occupied by kernel-shared memory, must be a power of 2. Used for perf data transfer */
             65536, /* Size of the circular buffer queue, must be a power of 2. e.g: 2, 4, 8, 16, 32, 64, 128 */
             524288, /* Maximum number of hash table entries for socket tracing, depends on the actual number of concurrent requests in the scenario */

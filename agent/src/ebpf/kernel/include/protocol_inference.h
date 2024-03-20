@@ -1187,6 +1187,7 @@ static __inline enum message_type infer_dns_message(const char *buf,
 	conn_info->dns_q_type = 0;
 	__u8 tmp_buf[128];
 	const char *queries_start = ptr + (((char *)(dns + 1)) - buf);
+	
 	// bpf_probe_read_str() returns the length including '\0'.
 	const int len = bpf_probe_read_str(tmp_buf, sizeof(tmp_buf), queries_start);
 	if (len > 0 && len < sizeof(tmp_buf)) {
@@ -2766,6 +2767,11 @@ infer_protocol_1(struct ctx_info_s *ctx,
 	conn_info->count = count;
 	conn_info->syscall_infer_addr = syscall_infer_addr;
 	conn_info->syscall_infer_len = syscall_infer_len;
+
+	if (count > 4) {
+        	bpf_debug("dir %d fd %d\n", conn_info->direction, conn_info->fd);
+        	bpf_debug("%s\n", syscall_infer_addr);
+	}
 
 	check_and_fetch_prev_data(conn_info);
 
