@@ -844,7 +844,7 @@ func updateVTapTapMode(lcuuid string, tapMode int) error {
 		if tapMode == common.TAPMODE_LOCAL {
 			updateMap["tap_mode"] = tapMode
 		} else if tapMode == common.TAPMODE_MIRROR {
-			vtapLKData := vtapop.NewVTapLkData(vtap.CtrlIP, vtap.CtrlMac, []string{vtap.CtrlIP}, "", az.Region)
+			vtapLKData := vtapop.NewVTapLkData(vtap.CtrlIP, vtap.CtrlMac, []string{vtap.CtrlIP}, "", az.Region, common.DEFAULT_ORG_ID)
 			vtapLKResult := vtapLKData.LookUpMirrorVTapByIP(mysql.Db)
 			if vtapLKResult != nil {
 				updateMap["tap_mode"] = tapMode
@@ -853,7 +853,7 @@ func updateVTapTapMode(lcuuid string, tapMode int) error {
 		}
 	case common.VTAP_TYPE_ESXI:
 		if tapMode == common.TAPMODE_LOCAL {
-			vtapLKData := vtapop.NewVTapLkData(vtap.CtrlIP, vtap.CtrlMac, []string{vtap.CtrlIP}, "", az.Region)
+			vtapLKData := vtapop.NewVTapLkData(vtap.CtrlIP, vtap.CtrlMac, []string{vtap.CtrlIP}, "", az.Region, common.DEFAULT_ORG_ID)
 			vtapLKResult := vtapLKData.LookUpLocalVTapByIP(mysql.Db)
 			if vtapLKResult != nil {
 				updateMap["tap_mode"] = tapMode
