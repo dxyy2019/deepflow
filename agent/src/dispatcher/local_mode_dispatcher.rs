@@ -28,8 +28,9 @@ use log::{debug, info, log_enabled, warn};
 use regex::Regex;
 
 use super::base_dispatcher::{BaseDispatcher, BaseDispatcherListener};
-use super::error::Result;
+use super::error::{Error, Result};
 
+use crate::dispatcher::RecvEngine;
 #[cfg(target_os = "linux")]
 use crate::platform::{GenericPoller, LibvirtXmlExtractor, Poller};
 use crate::{
@@ -89,6 +90,7 @@ impl LocalModeDispatcher {
             if base.reset_whitelist.swap(false, Ordering::Relaxed) {
                 base.tap_interface_whitelist.reset();
             }
+            log::info!("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 1");
             // The lifecycle of the recved will end before the next call to recv.
             let recved = unsafe {
                 BaseDispatcher::recv(
@@ -100,6 +102,11 @@ impl LocalModeDispatcher {
                     &base.ntp_diff,
                 )
             };
+            log::info!(
+                "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 2 packet recv  {:?}",
+                recved.is_some()
+            );
+
             if recved.is_none() {
                 flow_map.inject_flush_ticker(&config, Duration::ZERO);
                 if base.tap_interface_whitelist.next_sync(Duration::ZERO) {
@@ -109,9 +116,11 @@ impl LocalModeDispatcher {
                 base.check_and_update_bpf();
                 continue;
             }
+            log::info!("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 3");
             if base.pause.load(Ordering::Relaxed) {
                 continue;
             }
+            log::info!("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 4");
             #[cfg(target_os = "windows")]
             let (mut packet, mut timestamp) = recved.unwrap();
             #[cfg(any(target_os = "linux", target_os = "android"))]
@@ -270,6 +279,9 @@ impl LocalModeDispatcher {
             base.check_and_update_bpf();
         }
 
+        log::info!("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 1");
+        base.engine = RecvEngine::Libpcap(None);
+        log::info!("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 2");
         base.terminate_handler();
         info!("Stopped dispatcher {}", base.log_id);
     }
