@@ -35,11 +35,14 @@ import (
 	"time"
 
 	simplejson "github.com/bitly/go-simplejson"
+	"github.com/op/go-logging"
 	"gopkg.in/yaml.v3"
 	"inet.af/netaddr"
 
 	"github.com/deepflowio/deepflow/server/controller/common"
 )
+
+var log = logging.MustGetLogger("genesis.common")
 
 type VifInfo struct {
 	MaskLen uint32
@@ -120,12 +123,20 @@ type KVMDomain struct {
 	Type     string      `xml:"type,attr"`
 	UUID     string      `xml:"uuid"`
 	Name     string      `xml:"name"`
-	Label    string      `xml:"label"`
+	Title    string      `xml:"title"`
 	MetaData KVMMetaData `xml:"metadata"`
 	Devices  KVMDevices  `xml:"devices"`
 }
-type KVMDomains struct {
+type ETCDomains struct {
 	Domains []KVMDomain `xml:"domain"`
+}
+
+type DomStatus struct {
+	Domains KVMDomain `xml:"domain"`
+}
+
+type RUNDomains struct {
+	DomStatus []DomStatus `xml:"domstatus"`
 }
 
 type XMLVPC struct {
@@ -358,32 +369,55 @@ func ParseVMStates(s string) (map[string]int, error) {
 	return vmToState, nil
 }
 
-func ParseVMXml(s string) ([]XMLVM, error) {
+func ParseVMXml(s, nameField string) ([]XMLVM, error) {
 	var vms []XMLVM
 	if s == "" {
 		return vms, nil
 	}
 
 	// ns := "http://openstack.org/xmlns/libvirt/nova/1.0"
-
-	var domains KVMDomains
-	err := xml.Unmarshal([]byte(s), &domains)
+	var domains []KVMDomain
+	var etcDomains ETCDomains
+	err := xml.Unmarshal([]byte(s), &etcDomains)
 	if err != nil {
 		return vms, err
 	}
-	for _, domain := range domains.Domains {
+	if len(etcDomains.Domains) != 0 {
+		domains = etcDomains.Domains
+	} else {
+		var runDomains RUNDomains
+		err := xml.Unmarshal([]byte(s), &runDomains)
+		if err != nil {
+			return vms, err
+		}
+		for _, d := range runDomains.DomStatus {
+			domains = append(domains, d.Domains)
+		}
+	}
+	for _, domain := range domains {
 		var vm XMLVM
 		if domain.UUID == "" {
+			log.Warning("vm uuid not found in xml")
+			continue
+		}
+		if domain.Name == "" {
+			log.Warning("vm uuid not found in xml")
 			continue
 		}
 		vm.UUID = domain.UUID
-		if domain.Name == "" {
-			continue
-		}
 		vm.Label = domain.Name
-		vm.Name = domain.MetaData.Instance.Name
+		switch nameField {
+		case "uuid":
+			vm.Name = domain.UUID
+		case "name":
+			vm.Name = domain.Name
+		case "title":
+			vm.Name = domain.Title
+		default:
+			vm.Name = domain.MetaData.Instance.Name
+		}
 		if vm.Name == "" {
-			vm.Name = vm.Label
+			vm.Name = domain.Name
 		}
 		if domain.MetaData.Instance.Owner.Project.UUID != "" {
 			uuid := domain.MetaData.Instance.Owner.Project.UUID
