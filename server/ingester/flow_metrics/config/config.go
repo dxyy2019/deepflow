@@ -54,14 +54,15 @@ type FlowMetricsTTL struct {
 }
 
 type PromWriterConfig struct {
-	Enabled       bool              `yaml:"enabled"`
-	Endpoint      string            `yaml:"endpoint"`
-	Headers       map[string]string `yaml:"headers"`
-	BatchSize     int               `yaml:"batch-size"`
-	FlushTimeout  int               `yaml:"flush-timeout"`
-	QueueCount    int               `yaml:"queue-count"`
-	QueueSize     int               `yaml:"queue-size"`
-	MetricsFilter []string          `yaml:"metrics-filter"`
+	Enabled         bool              `yaml:"enabled"`
+	Endpoint        string            `yaml:"endpoint"`
+	Headers         map[string]string `yaml:"headers"`
+	BatchSize       int               `yaml:"batch-size"`
+	FlushTimeout    int               `yaml:"flush-timeout"`
+	QueueCount      int               `yaml:"queue-count"`
+	QueueSize       int               `yaml:"queue-size"`
+	MetricsFilter   []string          `yaml:"metrics-filter"`
+	PodNsIDsFilters [][2]int          `yaml:"pod-ns-ids-filters"`
 }
 
 type Config struct {

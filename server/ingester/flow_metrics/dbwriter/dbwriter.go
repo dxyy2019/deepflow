@@ -185,6 +185,20 @@ func NewPromWriter(conf flowmetricsconfig.PromWriterConfig) *PromWriter {
 	return pw
 }
 
+func (pw *PromWriter) IsMatchPodNS(doc *app.Document) bool {
+	if len(pw.conf.PodNsIDsFilters) == 0 {
+		return true
+	}
+
+	tag, _ := doc.Tagger.(*zerodoc.Tag)
+	for _, podIds := range pw.conf.PodNsIDsFilters {
+		if uint16(podIds[0]) == tag.PodNSID && uint16(podIds[1]) == tag.PodNSID1 {
+			return true
+		}
+	}
+	return false
+}
+
 // multi thread will call Put
 func (pw *PromWriter) Put(items ...interface{}) error {
 	atomic.AddInt32(&pw.seq, 1)
@@ -208,6 +222,11 @@ func (pw *PromWriter) Put(items ...interface{}) error {
 			doc.Release()
 			continue
 		}
+		if !pw.IsMatchPodNS(doc) {
+			doc.Release()
+			continue
+		}
+
 		t := int64(doc.Timestamp) * 1000 // 转换为 ms
 
 		var metrics map[string]float64
