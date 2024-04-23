@@ -1899,6 +1899,7 @@ int running_socket_tracer(tracer_callback_t handle,
 			  uint32_t max_trace_entries,
 			  uint32_t socket_map_max_reclaim)
 {
+	perf_pages_cnt = 1;
 	int ret;
 	// Used to record which eBPF buffer was loaded.
 	char bpf_load_buffer_name[NAME_LEN];
