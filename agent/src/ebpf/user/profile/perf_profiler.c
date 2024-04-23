@@ -1127,7 +1127,7 @@ static int create_profiler(struct bpf_tracer *tracer)
 					     MAP_PERF_PROFILER_BUF_A_NAME,
 					     reader_raw_cb,
 					     reader_lost_cb_a,
-					     PROFILE_PG_CNT_DEF, 1,
+					     1, 1,
 					     PROFILER_READER_EPOLL_TIMEOUT);
 	if (reader_a == NULL)
 		return ETR_NORESOURCE;
