@@ -21,17 +21,30 @@ pod_ns                , K8s 命名空间                 ,
 pod_node              , K8s 容器节点                 ,
 pod_ingress           , K8s Ingress                  ,
 pod_service           , K8s 容器服务                 ,
+pod_group_type        , K8s 工作负载类型             ,
 pod_group             , K8s 工作负载                 , 例如 Deployment、StatefulSet、Daemonset 等。
 pod                   , K8s 容器 POD                 ,
 service               , 服务                         ,
-resource_gl0_type     , 类型-容器 POD 优先           ,
-resource_gl0          , 资源-容器 POD 优先           ,
-resource_gl1_type     , 类型-工作负载优先            ,
-resource_gl1          , 资源-工作负载优先            ,
-resource_gl2_type     , 类型-服务优先                ,
-resource_gl2          , 资源-服务优先                ,
+resource_gl0_type     , 类型-容器 POD 优先           , 已废弃，请使用 auto_instance_type。
+resource_gl0          , 资源-容器 POD 优先           , 已废弃，请使用 auto_instance。
+resource_gl1_type     , 类型-工作负载优先            , 已废弃，请使用 auto_service_type。
+resource_gl1          , 资源-工作负载优先            , 已废弃，请使用 auto_service。
+resource_gl2_type     , 类型-服务优先                , 已废弃，请使用 auto_service_type。
+resource_gl2          , 资源-服务优先                , 已废弃，请使用 auto_service。
+auto_instance_type    , 类型-容器 POD 优先           , `auto_instance`实例对应的类型。
+auto_instance         , 资源-容器 POD 优先           , IP 对应的实例，实例为IP时，auto_instance_id显示为子网ID。
+auto_service_type     , 类型-服务优先                , `auto_service`实例对应的类型。
+auto_service          , 资源-服务优先                , 在`auto_instance`基础上，将容器服务的 ClusterIP 与工作负载聚合为服务，实例为IP时，auto_service_id显示为子网ID。
+gprocess              , 进程                         ,
+tap_port_host         , 采集网卡所属宿主机            ,
+tap_port_chost        , 采集网卡所属云服务器           ,
+tap_port_pod_node     , 采集网卡所属容器节点           ,
 
-labels                , K8s Labels                   ,
+k8s.label             , K8s Label                    ,
+k8s.annotation        , K8s Annotation               ,
+k8s.env               , K8s Env                      ,
+cloud.tag             , Cloud Tag                    ,
+os.app                , OS APP                       ,
 
 eth_type              , 链路协议                     ,
 vlan                  , VLAN TAG                     ,
@@ -70,12 +83,13 @@ flow_id               , 流日志 ID                    ,
 start_time            , 开始时间                     , 单位: 微秒。表示当前自然分钟内流的开始时间，对于新建流表示首包时间。
 end_time              , 结束时间                     , 单位: 微秒。表示当前自然分钟内流的结束时间，若流在该分钟内 close，则为尾包时间或流状态机超时的时间。
 close_type            , 流结束类型                   ,
-status                , 状态                         , 由 close_type（流结束类型）决定：正常结束/周期性上报=正常，客户端XX=客户端异常，服务端XX/连接超时=服务端异常，其他结束方式=未知。
+status                , 状态                         , 由 close_type（流结束类型）与 protocol（协议）决定：正常结束/周期性上报/非TCP超时=正常，客户端XX=客户端异常，服务端XX/TCP超时=服务端异常，其他结束方式=未知。
 is_new_flow           , 新建流                       ,
 
 signal_source         , 信号源                       ,
 tap                   , 采集点                       , Traffic Access Point，流量采集点，使用固定值（虚拟网络）表示云内流量，其他值表示传统 IDC 流量（支持最多 254 个自定义值表示镜像分光的位置）。
 vtap                  , 采集器                       ,
+nat_source            , NAT 源                       ,
 tap_port              , 采集位置标识                 , 当采集位置类型为本地网卡时，此值表示采集网卡的 MAC 地址后缀（后四字节）。
 tap_port_name         , 采集位置名称                 , 当采集位置类型为本地网卡时，此值表示采集网卡的名称。
 tap_port_type         , 采集位置类型                 , 表示流量采集位置的类型，包括本地网卡（云内流量）、云网关网卡（云网关流量）、分光镜像（传统 IDC 流量）等。
@@ -83,3 +97,5 @@ tap_side              , 路径统计位置                 , 采集位置在流�
 l2_end                , 二层边界                     , 表示是否是在客户端网卡或服务端网卡处采集的流量。
 l3_end                , 三层边界                     , 表示是否是在客户端或服务端所在二层网络内采集的流量。
 has_pcap              , PCAP 文件                    , 是否存储了 PCAP 文件
+nat_real_ip           , NAT IP 地址                  , NAT 作用前（后）的真实 IP 地址，该值从 TOA（TCP Option Address）中提取，或者根据云平台中 VIP 与 RIP 的映射信息计算。
+nat_real_port         , NAT Port                     , NAT 作用前的真实端口号，该值从 TOA（TCP Option Address）中提取。

@@ -17,9 +17,10 @@ closed_flow                 , closed_flow               , counter    , L4 Throug
 flow_load                   , flow_load                 , gauge      , L4 Throughput   , 111
 syn_count                   , syn_count                 , counter    , L4 Throughput   , 111
 synack_count                , synack_count              , counter    , L4 Throughput   , 111
-l4_byte                     ,                           , counter    , L3 Throughput   , 111
-l4_byte_tx                  , l4_byte_tx                , counter    , L3 Throughput   , 111
-l4_byte_rx                  , l4_byte_rx                , counter    , L3 Throughput   , 111
+l4_byte                     ,                           , counter    , L4 Throughput   , 111
+l4_byte_tx                  , l4_byte_tx                , counter    , L4 Throughput   , 111
+l4_byte_rx                  , l4_byte_rx                , counter    , L4 Throughput   , 111
+direction_score             , direction_score           , bounded_gauge      , L4 Throughput   , 111
 
 retrans_syn                 , retrans_syn               , counter    , TCP Slow   , 111
 retrans_synack              , retrans_synack            , counter    , TCP Slow   , 111
@@ -86,32 +87,4 @@ l7_error_ratio              ,                           , percentage , Applicati
 l7_client_error_ratio       ,                           , percentage , Application   , 111
 l7_server_error_ratio       ,                           , percentage , Application   , 111
 
-vpc_0                       ,                           , tag        , Cardinality   , 111
-subnet_0                    ,                           , tag        , Cardinality   , 111
-ip_0                        ,                           , tag        , Cardinality   , 111
-pod_cluster_0               ,                           , tag        , Cardinality   , 111
-pod_node_0                  ,                           , tag        , Cardinality   , 111
-pod_ns_0                    ,                           , tag        , Cardinality   , 111
-pod_group_0                 ,                           , tag        , Cardinality   , 111
-pod_0                       ,                           , tag        , Cardinality   , 111
-host_0                      ,                           , tag        , Cardinality   , 111
-chost_0                     ,                           , tag        , Cardinality   , 111
-region_0                    ,                           , tag        , Cardinality   , 111
-az_0                        ,                           , tag        , Cardinality   , 111
-vpc_1                       ,                           , tag        , Cardinality   , 111
-subnet_1                    ,                           , tag        , Cardinality   , 111
-ip_1                        ,                           , tag        , Cardinality   , 111
-pod_cluster_1               ,                           , tag        , Cardinality   , 111
-pod_node_1                  ,                           , tag        , Cardinality   , 111
-pod_ns_1                    ,                           , tag        , Cardinality   , 111
-pod_group_1                 ,                           , tag        , Cardinality   , 111
-pod_1                       ,                           , tag        , Cardinality   , 111
-host_1                      ,                           , tag        , Cardinality   , 111
-chost_1                     ,                           , tag        , Cardinality   , 111
-region_1                    ,                           , tag        , Cardinality   , 111
-az_1                        ,                           , tag        , Cardinality   , 111
-ip_version                  , is_ipv4                   , tag        , Cardinality   , 111
-tap_type                    , tap_type                  , tag        , Cardinality   , 111
-vtap_id                     , vtap_id                   , tag        , Cardinality   , 111
-protocol                    , protocol                  , tag        , Cardinality   , 111
-server_port                 , server_port               , tag        , Cardinality   , 111
+row                         ,                           , other      , Other         , 111 

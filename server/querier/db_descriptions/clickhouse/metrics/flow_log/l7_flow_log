@@ -5,6 +5,7 @@ session_length       ,                      , counter    , Throughput      , 111
 request_length       , request_length       , counter    , Throughput      , 111
 response_length      , response_length      , counter    , Throughput      , 111
 sql_affected_rows    , sql_affected_rows    , counter    , Throughput      , 111
+direction_score      , direction_score      , bounded_gauge      , Throughput      , 111
 log_count            ,                      , counter    , Throughput      , 111        
 
 error                ,                      , counter    , Error           , 111
@@ -16,13 +17,4 @@ server_error_ratio   ,                      , percentage , Error           , 111
 
 response_duration    , response_duration    , delay      , Delay           , 111
 
-ip_version           , is_ipv4              , tag        , Cardinality     , 111
-server_port          , server_port          , tag        , Cardinality     , 111
-version              , version              , tag        , Cardinality     , 111
-request_type         , request_type         , tag        , Cardinality     , 111
-request_domain       , request_domain       , tag        , Cardinality     , 111
-request_resource     , request_resource     , tag        , Cardinality     , 111
-response_code        , response_code        , tag        , Cardinality     , 111
-response_result      , response_result      , tag        , Cardinality     , 111
-tap                  , tap_type             , tag        , Cardinality     , 111
-vtap                 , vtap_id              , tag        , Cardinality     , 111
+row                  ,                      , other      , Other           , 111 
