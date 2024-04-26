@@ -2979,14 +2979,14 @@ infer_mongo_message(const char *buf, size_t count,
  *
  *       client send:
  *       ------------
- *       (6) curl-29772 handshake handshake.content_type 0x16 version 0x303 handshake_type 0x10
+ *       (6) curl-29772 handshake handshake.content_type 0x16 version 0x303 handshake_type 0x10 ----------------
  *                                count 126   dir send
  *           (7) (8) together with (6);
  *           (8) Encrypted Handshake Message (content_type 0x16) (client finish)
  *
  *       client recv:
  *       ------------
- *       (9)(droped) curl-29772 ChangeCipherSpec content_type 0x14 version 0x303 handshake_type 0x1
+ *       (9)(droped) curl-29772 ChangeCipherSpec content_type 0x14 version 0x303 handshake_type 0x1 ------------
  *                                count 6 dir recv
  *       (10) curl-29772 handshake handshake.content_type 0x16 version 0x303 handshake_type 0x0
  *                                count 45    dir recv

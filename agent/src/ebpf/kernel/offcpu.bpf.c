@@ -31,23 +31,150 @@
 #include "offcpu.h"
 
 /* *INDENT-OFF* */
-// Records offcpu information
-BPF_HASH(offcpu_sched_map, int, struct sched_info_s)
-// Used to calculate the offcpu time
-BPF_HASH(offcpu_start_map, int, __u64)
-// It is used to record control information and statistics 
-//MAP_ARRAY(offcpu_state_map, __u32, __u64, OFFCPU_CNT)
-// For dual-buffer mechanism output
-MAP_PERF_EVENT(offcpu_output_a, int, __u32, MAX_CPU)
-MAP_PERF_EVENT(offcpu_output_b, int, __u32, MAX_CPU)
-// Used for dual buffer stack map
-MAP_STACK_TRACE(offcpu_stack_map_a, STACK_MAP_ENTRIES)
-MAP_STACK_TRACE(offcpu_stack_map_b, STACK_MAP_ENTRIES)
 
-// For process filtering
-
+MAP_ARRAY(start_pid_map, int, int, 1)
+struct data_args_t {
+	unsigned long addr;
+        unsigned long len;
+	unsigned long fd;
+	__u64 ts;
+};
+BPF_HASH(active_read_args_map, __u64, struct data_args_t)
+struct mmap_data_t {
+	unsigned long real_addr;
+        unsigned long addr;
+        unsigned long len;
+        unsigned long fd;
+        __u64 ts;
+	int pid;
+	int tgid;
+	char comm[16];
+};
+BPF_HASH(active_mmap_map, __u64, struct mmap_data_t, 10000)
 /* *INDENT-ON* */
 
+// /sys/kernel/debug/tracing/events/sched/sched_process_exec/format
+TP_SCHED_PROG(sched_process_exec) (struct sched_switch_ctx * ctx) {
+	__u64 id = bpf_get_current_pid_tgid();
+	pid_t pid = id >> 32;
+	pid_t tid = (__u32) id;
+	if (pid == tid) {
+		char comm[TASK_COMM_LEN];
+		bpf_get_current_comm(comm, sizeof(comm));
+		// deepflow-agent
+		if ((comm[9] == 'a' && comm[10] == 'g'
+		     && comm[11] == 'e' && comm[12] == 'n')) {
+			int key = 0;
+			start_pid_map__update(&key, &pid);
+		}
+	}
+
+	return 0;
+}
+
+struct syscall_mmap_enter_ctx {
+	unsigned short common_type;	//offset:0;	size:2;	signed:0;
+	unsigned char common_flags;	//offset:2;	size:1;	signed:0;
+	unsigned char common_preempt_count;	//offset:3;	size:1;	signed:0;
+	int common_pid;	//offset:4;	size:4;	signed:1;
+
+	int __syscall_nr;	//offset:8;	size:4;	signed:1;
+	unsigned long addr;	//offset:16;	size:8;	signed:0;
+	unsigned long len;	//offset:24;	size:8;	signed:0;
+	unsigned long prot;	//offset:32;	size:8;	signed:0;
+	unsigned long flags;	//offset:40;	size:8;	signed:0;
+	unsigned long fd;	//offset:48;	size:8;	signed:0;
+	unsigned long off;	//offset:56;	size:8;	signed:0;
+};
+
+TPPROG(sys_enter_mmap) (struct syscall_mmap_enter_ctx * ctx) {
+        int key = 0;
+        int *filter_pid = start_pid_map__lookup(&key);
+        if (filter_pid == NULL)
+                return 0;
+
+        __u64 id = bpf_get_current_pid_tgid();
+        if ((id >> 32) != *filter_pid)
+                return 0;
+
+	struct data_args_t read_args = {};
+        read_args.fd = ctx->fd;
+        read_args.addr = ctx->addr;
+        read_args.ts = bpf_ktime_get_ns();
+	read_args.len = ctx->len;
+        active_read_args_map__update(&id, &read_args);
+	return 0;	
+}
+
+struct syscall_mmap_exit_ctx {
+	unsigned short common_type;	//offset:0;     size:2; signed:0;
+	unsigned char common_flags;	//offset:2;     size:1; signed:0;
+	unsigned char common_preempt_count;	//offset:3;     size:1; signed:0;
+	int common_pid;		//offset:4;     size:4; signed:1;
+
+	int __syscall_nr;	//offset:8;     size:4; signed:1;
+	long ret;		//offset:16;    size:8; signed:1;
+};
+
+TPPROG(sys_exit_mmap) (struct syscall_mmap_exit_ctx * ctx) {
+        __u64 id = bpf_get_current_pid_tgid();
+        struct data_args_t *read_args = active_read_args_map__lookup(&id);
+        // Don't process FD 0-2 to avoid STDIN, STDOUT, STDERR.
+        if (read_args == NULL) {
+		return 0;
+        }
+
+	if (ctx->ret <= 0) {
+		active_read_args_map__delete(&id);
+		return 0;
+	}
+
+	__u64 key = ctx->ret;
+	struct mmap_data_t data;
+        data.addr = read_args->addr;
+        data.len = read_args->len;
+        data.fd = read_args->fd;
+        data.ts = read_args->ts;
+	data.real_addr = key;
+	data.pid = (int)id;
+	data.tgid = id >> 32;
+        bpf_get_current_comm(&data.comm, sizeof(data.comm));
+
+	active_mmap_map__update(&key, &data);
+
+	active_read_args_map__delete(&id);
+	return 0;
+}
+
+struct syscall_munmap_enter_ctx {
+	unsigned short common_type;	//offset:0;     size:2; signed:0;
+	unsigned char common_flags;	//offset:2;     size:1; signed:0;
+	unsigned char common_preempt_count;	//offset:3;     size:1; signed:0;
+	int common_pid;
+
+	int __syscall_nr;	// offset:8;          //size:4;       signed:1;
+	unsigned long addr;	//offset:16;    size:8; signed:0;
+	size_t len;		//offset:24;    size:8; signed:0;
+};
+
+TPPROG(sys_enter_munmap) (struct syscall_munmap_enter_ctx * ctx) {
+	int key = 0;
+	int *filter_pid = start_pid_map__lookup(&key);
+	if (filter_pid == NULL)
+		return 0;
+
+	__u64 id = bpf_get_current_pid_tgid();
+	if ((id >> 32) != *filter_pid)
+		return 0;
+
+	__u64 addr = ctx->addr;
+
+	active_mmap_map__delete(&addr);
+
+	return 0;
+}
+
+#if 0
 static inline int record_sched_info(struct sched_switch_ctx *ctx)
 {
 	__u64 id = bpf_get_current_pid_tgid();
@@ -175,3 +302,4 @@ KPROG(finish_task_switch) (struct pt_regs * ctx) {
 
 	return oncpu(ctx, pid, tgid, delta_ns);
 }
+#endif

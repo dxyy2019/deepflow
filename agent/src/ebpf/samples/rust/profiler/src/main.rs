@@ -189,15 +189,15 @@ fn main() {
             ::std::process::exit(1);
         }
 
-        set_profiler_regex(
-            CString::new("^(socket_tracer|java|deepflow-.*)$".as_bytes())
-                .unwrap()
-                .as_c_str()
-                .as_ptr(),
-        );
+        //set_profiler_regex(
+        //    CString::new("^(socket_tracer|java|deepflow-.*)$".as_bytes())
+        //        .unwrap()
+        //        .as_c_str()
+        //        .as_ptr(),
+        //);
 
         // CPUID will not be included in the aggregation of stack trace data.
-        set_profiler_cpu_aggregation(0);
+        //set_profiler_cpu_aggregation(0);
 
         bpf_tracer_finish();
 
@@ -206,23 +206,22 @@ fn main() {
         //    ::std::process::exit(1);
         //}
 
-        let stats = socket_tracer_stats();
-        print!("{:#?}\n", stats);
+        //let stats = socket_tracer_stats();
+        //print!("{:#?}\n", stats);
 
-        print!("start start ...\n");
+        print!("Please restart the deepflow-agent first, as detection occurs only after the agent restarts. \nData will be output every 60 seconds thereafter.\n\n");
         while socket_tracer_start() != 0 {
-            print!("socket_tracer_start() error, sleep 1s retry.\n");
             std::thread::sleep(Duration::from_secs(1));
         }
 
-        thread::sleep(Duration::from_secs(150));
-        stop_continuous_profiler();
-        print!(
-            "====== capture count {}, sum {}\n",
-            get_counter(0),
-            get_counter(1)
-        );
-        release_flame_graph_hash();
+        //thread::sleep(Duration::from_secs(150));
+        //stop_continuous_profiler();
+        //print!(
+        //    "====== capture count {}, sum {}\n",
+        //    get_counter(0),
+        //    get_counter(1)
+        //);
+        //release_flame_graph_hash();
     }
 
     loop {

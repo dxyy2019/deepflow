@@ -68,9 +68,11 @@ MAP_STACK_TRACE(stack_map_b, STACK_MAP_ENTRIES)
  * switching between buffer a and buffer b.
  */
 MAP_ARRAY(profiler_state_map, __u32, __u64, PROFILER_CNT)
- SEC("perf_event")
+
+SEC("perf_event")
 int bpf_perf_event(struct bpf_perf_event_data *ctx)
 {
+	return 0;
 	__u32 count_idx;
 
 	count_idx = TRANSFER_CNT_IDX;

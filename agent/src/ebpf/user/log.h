@@ -53,11 +53,12 @@ enum
 #define ebpf_debug(fmt, ...)
 #endif
 
-#define ebpf_info(format,args...) \
-	_ebpf_info (format, ## args)
+#define ebpf_info(format,args...) 
 
-#define ebpf_warning(format,args...) \
-	_ebpf_error (ERROR_WARNING, ebpf_error_function, ebpf_error_file, __LINE__, format, ## args)
+//_ebpf_info (format, ## args)
+
+#define ebpf_warning(format,args...)
+//	_ebpf_error (ERROR_WARNING, ebpf_error_function, ebpf_error_file, __LINE__, format, ## args)
 
 #define ebpf_error(format,args...) \
 	_ebpf_error (ERROR_ABORT, ebpf_error_function, ebpf_error_file, __LINE__, format, ## args)

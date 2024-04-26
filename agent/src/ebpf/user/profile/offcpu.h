@@ -21,6 +21,20 @@
 #define KP_HOOK_NAME "finish_task_switch"
 
 #undef CP_PROFILE_SET_PROBES
+// tracepoint/sched/sched_process_exec
+// tracepoint/syscalls/sys_exit_mmap
+// tracepoint/syscalls/sys_enter_munmap
+#define CP_PROFILE_SET_PROBES(T)                        \
+do {                                                    \
+        int index = 0, curr_idx;                        \
+        tps_set_symbol((T), "tracepoint/sched/sched_process_exec");              \
+	tps_set_symbol((T), "tracepoint/syscalls/sys_exit_mmap");              \
+	tps_set_symbol((T), "tracepoint/syscalls/sys_enter_mmap");              \
+	tps_set_symbol((T), "tracepoint/syscalls/sys_enter_munmap");              \
+        (T)->tps_nr = index;                            \
+} while(0)
+
+#if 0
 #define CP_PROFILE_SET_PROBES(T)			\
 do {							\
 	int index = 0, curr_idx;			\
@@ -30,5 +44,5 @@ do {							\
 	tps_set_symbol((T), TP_HOOK_NAME);		\
 	(T)->tps_nr = index;				\
 } while(0)
-
+#endif
 #endif /*DF_USER_OFFCPU_H */

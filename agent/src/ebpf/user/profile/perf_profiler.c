@@ -797,16 +797,16 @@ static u32 delete_all_stackmap_elems(struct bpf_tracer *tracer,
 	u32 key = 0, next_key;
 	u32 reclaim_count = 0;
 	u32 find_count = 0;
-	struct list_head clear_elem_head;
-	init_list_head(&clear_elem_head);
+	struct list_head mmap_elem_head;
+	init_list_head(&mmap_elem_head);
 
 	while (bpf_get_next_key(map_fd, &key, &next_key) == 0) {
 		find_count++;
-		insert_list(&next_key, sizeof(next_key), &clear_elem_head);
+		insert_list(&next_key, sizeof(next_key), &mmap_elem_head);
 		key = next_key;
 	}
 
-	reclaim_count = __reclaim_map(map_fd, &clear_elem_head);
+	reclaim_count = __reclaim_map(map_fd, &mmap_elem_head);
 
 	ebpf_info("[%s] table %s find_count %u reclaim_count :%u\n",
 		  __func__, stack_map_name, find_count, reclaim_count);
@@ -1017,15 +1017,152 @@ static void java_syms_update_work(void *arg)
 	java_syms_update_main(arg);
 }
 
+static bool inline mmap_insert_list(void *elt, uint32_t len, struct list_head *h)
+{
+        struct clear_list_elem *cle;
+        cle = calloc(sizeof(*cle) + len, 1);
+        if (cle == NULL) {
+                ebpf_warning("calloc() failed.\n");
+                return false;
+        }
+        memcpy((void *)cle->p, (void *)elt, len);
+        list_add_tail(&cle->list, h);
+        return true;
+}
+
 static void cp_reader_work(void *arg)
 {
+#define MAP_MMAP_NAME            "__active_mmap_map"
+	struct mmap_data_t {
+		unsigned long real_addr;
+		unsigned long addr;
+		unsigned long len;
+		unsigned long fd;
+		__u64 ts;
+		int pid;
+		int tgid;
+		char comm[16];
+	};
+
 	thread_index = THREAD_PROFILER_READER_IDX;
 	struct bpf_tracer *t = profiler_tracer;
-	struct bpf_perf_reader *reader_a, *reader_b;
-	reader_a = &t->readers[0];
-	reader_b = &t->readers[1];
+	//struct bpf_perf_reader *reader_a, *reader_b;
+	//reader_a = &t->readers[0];
+	//reader_b = &t->readers[1];
 
+	struct ebpf_map *map = ebpf_obj__get_map_by_name(t->obj, MAP_MMAP_NAME);
+	if (map == NULL) {
+		ebpf_warning("[%s] map(name:%s) is NULL.\n", __func__,
+			     MAP_MMAP_NAME);
+	}
+	int map_fd = map->fd;
+
+	uint64_t conn_key, next_conn_key;
+	uint32_t count = 0;
+	struct mmap_data_t value;
+#define MAX_LINE_LENGTH 1024
 	for (;;) {
+		sleep(60);
+
+		{
+			count = 0;
+			conn_key = next_conn_key = 0;
+			int pid = 0;
+
+			struct list_head mmap_elem_head;
+			init_list_head(&mmap_elem_head);
+
+			while (bpf_get_next_key
+			       (map_fd, &conn_key, &next_conn_key) == 0) {
+				if (bpf_lookup_elem
+				    (map_fd, &next_conn_key, &value) == 0) {
+					count++;
+					pid = value.tgid;
+					mmap_insert_list(&value, sizeof(value),
+						    &mmap_elem_head);
+				}
+				conn_key = next_conn_key;
+			}
+
+			if (pid > 0) {
+				char buf[64];
+				snprintf(buf, sizeof(buf),
+					 "pmap -X %d > /tmp/.pmap", pid);
+				system(buf);
+				sleep(1);
+				// 打开文件
+				FILE *file = fopen("/tmp/.pmap", "r");
+				if (file == NULL) {
+					perror("Error opening file");
+					continue;
+				}
+				count++;
+				fprintf(stdout, "----------------- \n\n", count);
+
+				// 逐行读取文件内容
+				char line[MAX_LINE_LENGTH];
+				while (fgets(line, MAX_LINE_LENGTH, file) !=
+				       NULL) {
+					// 处理每一行的内容，这里只是简单地将其输出到控制台
+
+					int count = 0;
+					struct list_head *p, *n;
+					struct clear_list_elem *cle;
+					struct mmap_data_t *v;
+					int len = strlen(line);
+
+					fprintf(stdout, "%s", line);
+					list_for_each_safe(p, n, &mmap_elem_head) {
+						cle =
+						    container_of(p,
+								 struct
+								 clear_list_elem,
+								 list);
+						char addr_str[64];
+						v = cle->p;
+						snprintf(addr_str,
+							 sizeof(addr_str),
+							 "%lx", v->real_addr);
+						if (strstr(line, addr_str)) {
+							fprintf(stdout, "        |- TID %d %s\n\n",v->pid, v->comm);
+							#if 0
+							fprintf(stdout,
+								"        |- %lx req_addr %lx len %lu fd %lu tgid %d pid %d comm %s ts %lu\n",
+								v->real_addr,
+								v->addr,
+								v->len,
+								v->fd,
+								v->tgid,
+								v->pid,
+								v->comm,
+								v->ts);
+							#endif
+						}
+					}
+					fflush(stdout);
+
+				}
+
+				// 关闭文件
+				fclose(file);
+			}
+
+
+			{
+				int count = 0;
+				struct list_head *p, *n;
+				struct clear_list_elem *cle;
+				list_for_each_safe(p, n, &mmap_elem_head) {
+					cle =
+					    container_of(p, struct clear_list_elem,
+							 list);
+					list_head_del(&cle->list);
+					free(cle);
+				}
+
+			}
+		}
+#if 0
 		if (unlikely(profiler_stop == 1)) {
 			if (g_enable_perf_sample)
 				set_enable_perf_sample(t, 0);
@@ -1058,6 +1195,7 @@ static void cp_reader_work(void *arg)
 		tracer_reader_lock(t);
 		process_bpf_stacktraces(t, reader_a, reader_b);
 		tracer_reader_unlock(t);
+#endif
 	}
 
 exit:

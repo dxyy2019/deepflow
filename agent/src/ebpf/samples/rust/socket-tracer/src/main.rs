@@ -201,127 +201,127 @@ extern "C" fn debug_callback(_data: *mut c_char, len: c_int) {
 }
 
 extern "C" fn socket_trace_callback(sd: *mut SK_BPF_DATA) {
-    unsafe {
-        let mut proto_tag = String::from("");
-        if sk_proto_safe(sd) == SOCK_DATA_OTHER {
-            proto_tag.push_str("ORTHER");
-        } else if sk_proto_safe(sd) == SOCK_DATA_HTTP1 {
-            proto_tag.push_str("HTTP1");
-        } else if sk_proto_safe(sd) == SOCK_DATA_HTTP2 {
-            proto_tag.push_str("HTTP2");
-        } else if sk_proto_safe(sd) == SOCK_DATA_DNS {
-            proto_tag.push_str("DNS");
-        } else if sk_proto_safe(sd) == SOCK_DATA_MYSQL {
-            proto_tag.push_str("MYSQL");
-        } else if sk_proto_safe(sd) == SOCK_DATA_POSTGRESQL {
-            proto_tag.push_str("POSTGRESQL");
-        } else if sk_proto_safe(sd) == SOCK_DATA_REDIS {
-            proto_tag.push_str("REDIS");
-        } else if sk_proto_safe(sd) == SOCK_DATA_KAFKA {
-            proto_tag.push_str("KAFKA");
-        } else if sk_proto_safe(sd) == SOCK_DATA_MQTT {
-            proto_tag.push_str("MQTT");
-        } else if sk_proto_safe(sd) == SOCK_DATA_AMQP {
-            proto_tag.push_str("AMQP");
-        } else if sk_proto_safe(sd) == SOCK_DATA_NATS {
-            proto_tag.push_str("NATS");
-        } else if sk_proto_safe(sd) == SOCK_DATA_PULSAR {
-            proto_tag.push_str("PULSAR");
-        } else if sk_proto_safe(sd) == SOCK_DATA_DUBBO {
-            proto_tag.push_str("DUBBO");
-        } else if sk_proto_safe(sd) == SOCK_DATA_SOFARPC {
-            proto_tag.push_str("SOFARPC");
-        } else if sk_proto_safe(sd) == SOCK_DATA_FASTCGI {
-            proto_tag.push_str("FASTCGI");
-        } else if sk_proto_safe(sd) == SOCK_DATA_MONGO {
-            proto_tag.push_str("MONGO");
-        } else if sk_proto_safe(sd) == SOCK_DATA_TLS {
-            proto_tag.push_str("TLS");
-        } else if sk_proto_safe(sd) == SOCK_DATA_ORACLE {
-            proto_tag.push_str("ORACLE");
-        } else if sk_proto_safe(sd) == SOCK_DATA_OPENWIRE {
-            proto_tag.push_str("OPENWIRE");
-        } else if sk_proto_safe(sd) == SOCK_DATA_ZMTP {
-            proto_tag.push_str("ZMTP");
-        } else {
-            proto_tag.push_str("UNSPEC");
-        }
+    //unsafe {
+    //    let mut proto_tag = String::from("");
+    //    if sk_proto_safe(sd) == SOCK_DATA_OTHER {
+    //        proto_tag.push_str("ORTHER");
+    //    } else if sk_proto_safe(sd) == SOCK_DATA_HTTP1 {
+    //        proto_tag.push_str("HTTP1");
+    //    } else if sk_proto_safe(sd) == SOCK_DATA_HTTP2 {
+    //        proto_tag.push_str("HTTP2");
+    //    } else if sk_proto_safe(sd) == SOCK_DATA_DNS {
+    //        proto_tag.push_str("DNS");
+    //    } else if sk_proto_safe(sd) == SOCK_DATA_MYSQL {
+    //        proto_tag.push_str("MYSQL");
+    //    } else if sk_proto_safe(sd) == SOCK_DATA_POSTGRESQL {
+    //        proto_tag.push_str("POSTGRESQL");
+    //    } else if sk_proto_safe(sd) == SOCK_DATA_REDIS {
+    //        proto_tag.push_str("REDIS");
+    //    } else if sk_proto_safe(sd) == SOCK_DATA_KAFKA {
+    //        proto_tag.push_str("KAFKA");
+    //    } else if sk_proto_safe(sd) == SOCK_DATA_MQTT {
+    //        proto_tag.push_str("MQTT");
+    //    } else if sk_proto_safe(sd) == SOCK_DATA_AMQP {
+    //        proto_tag.push_str("AMQP");
+    //    } else if sk_proto_safe(sd) == SOCK_DATA_NATS {
+    //        proto_tag.push_str("NATS");
+    //    } else if sk_proto_safe(sd) == SOCK_DATA_PULSAR {
+    //        proto_tag.push_str("PULSAR");
+    //    } else if sk_proto_safe(sd) == SOCK_DATA_DUBBO {
+    //        proto_tag.push_str("DUBBO");
+    //    } else if sk_proto_safe(sd) == SOCK_DATA_SOFARPC {
+    //        proto_tag.push_str("SOFARPC");
+    //    } else if sk_proto_safe(sd) == SOCK_DATA_FASTCGI {
+    //        proto_tag.push_str("FASTCGI");
+    //    } else if sk_proto_safe(sd) == SOCK_DATA_MONGO {
+    //        proto_tag.push_str("MONGO");
+    //    } else if sk_proto_safe(sd) == SOCK_DATA_TLS {
+    //        proto_tag.push_str("TLS");
+    //    } else if sk_proto_safe(sd) == SOCK_DATA_ORACLE {
+    //        proto_tag.push_str("ORACLE");
+    //    } else if sk_proto_safe(sd) == SOCK_DATA_OPENWIRE {
+    //        proto_tag.push_str("OPENWIRE");
+    //    } else if sk_proto_safe(sd) == SOCK_DATA_ZMTP {
+    //        proto_tag.push_str("ZMTP");
+    //    } else {
+    //        proto_tag.push_str("UNSPEC");
+    //    }
 
-        println!("+ --------------------------------- +");
-        if sk_proto_safe(sd) == SOCK_DATA_HTTP1 {
-            let data = sk_data_str_safe(sd);
-            println!("{} <{}> RECONFIRM {} DIR {} TYPE {} PID {} THREAD_ID {} COROUTINE_ID {} CONTAINER_ID {} SOURCE {} ROLE {} COMM {} {} LEN {} SYSCALL_LEN {} SOCKET_ID 0x{:x} TRACE_ID 0x{:x} TCP_SEQ {} DATA_SEQ {} TLS {} TimeStamp {}\n{}", 
-                     date_time((*sd).timestamp),
-                     proto_tag,
-                     (*sd).need_reconfirm,
-                     (*sd).direction,
-                     (*sd).msg_type,
-                     (*sd).process_id,
-                     (*sd).thread_id,
-                     (*sd).coroutine_id,
-                     sd_container_id_safe(sd),
-                     (*sd).source,
-                     (*sd).socket_role,
-                     process_name_safe(sd),
-                     flow_info(sd),
-                     (*sd).cap_len,
-                     (*sd).syscall_len,
-                     (*sd).socket_id,
-                     (*sd).syscall_trace_id_call,
-                     (*sd).tcp_seq,
-                     (*sd).cap_seq,
-                     (*sd).is_tls,
-                     (*sd).timestamp,
-                     data);
-        } else {
-            let data: Vec<u8> = sk_data_bytes_safe(sd);
-            println!("{} <{}> RECONFIRM {} DIR {} TYPE {} PID {} THREAD_ID {} COROUTINE_ID {} CONTAINER_ID {} SOURCE {} ROLE {} COMM {} {} LEN {} SYSCALL_LEN {} SOCKET_ID 0x{:x} TRACE_ID 0x{:x} TCP_SEQ {} DATA_SEQ {} TLS {} TimeStamp {}",
-                     date_time((*sd).timestamp),
-                     proto_tag,
-                     (*sd).need_reconfirm,
-                     (*sd).direction,
-                     (*sd).msg_type,
-                     (*sd).process_id,
-                     (*sd).thread_id,
-                     (*sd).coroutine_id,
-                     sd_container_id_safe(sd),
-                     (*sd).source,
-                     (*sd).socket_role,
-                     process_name_safe(sd),
-                     flow_info(sd),
-                     (*sd).cap_len,
-                     (*sd).syscall_len,
-                     (*sd).socket_id,
-                     (*sd).syscall_trace_id_call,
-                     (*sd).tcp_seq,
-                     (*sd).cap_seq,
-                     (*sd).is_tls,
-                     (*sd).timestamp);
-            if (*sd).source == 2 {
-                print_uprobe_http2_info((*sd).cap_data, (*sd).cap_len);
-            } else if (*sd).source == 4 {
-                print_io_event_info((*sd).cap_data, (*sd).cap_len);
-            } else if (*sd).source == 5 {
-                print_uprobe_grpc_dataframe((*sd).cap_data, (*sd).cap_len);
-            } else if sk_proto_safe(sd) == SOCK_DATA_OTHER {
-                for x in data.into_iter() {
-                    print!("{} ", format!("{:02x}", x));
-                }
-            } else {
-                for x in data.into_iter() {
-                    if x < 32 || x > 126 {
-                        print!(".");
-                        continue;
-                    }
-                    let b = x as char;
-                    print!("{0}", b);
-                }
-            }
-            print!("\x1b[0m\n");
-        }
+    //    println!("+ --------------------------------- +");
+    //    if sk_proto_safe(sd) == SOCK_DATA_HTTP1 {
+    //        let data = sk_data_str_safe(sd);
+    //        println!("{} <{}> RECONFIRM {} DIR {} TYPE {} PID {} THREAD_ID {} COROUTINE_ID {} CONTAINER_ID {} SOURCE {} ROLE {} COMM {} {} LEN {} SYSCALL_LEN {} SOCKET_ID 0x{:x} TRACE_ID 0x{:x} TCP_SEQ {} DATA_SEQ {} TLS {} TimeStamp {}\n{}", 
+    //                 date_time((*sd).timestamp),
+    //                 proto_tag,
+    //                 (*sd).need_reconfirm,
+    //                 (*sd).direction,
+    //                 (*sd).msg_type,
+    //                 (*sd).process_id,
+    //                 (*sd).thread_id,
+    //                 (*sd).coroutine_id,
+    //                 sd_container_id_safe(sd),
+    //                 (*sd).source,
+    //                 (*sd).socket_role,
+    //                 process_name_safe(sd),
+    //                 flow_info(sd),
+    //                 (*sd).cap_len,
+    //                 (*sd).syscall_len,
+    //                 (*sd).socket_id,
+    //                 (*sd).syscall_trace_id_call,
+    //                 (*sd).tcp_seq,
+    //                 (*sd).cap_seq,
+    //                 (*sd).is_tls,
+    //                 (*sd).timestamp,
+    //                 data);
+    //    } else {
+    //        let data: Vec<u8> = sk_data_bytes_safe(sd);
+    //        println!("{} <{}> RECONFIRM {} DIR {} TYPE {} PID {} THREAD_ID {} COROUTINE_ID {} CONTAINER_ID {} SOURCE {} ROLE {} COMM {} {} LEN {} SYSCALL_LEN {} SOCKET_ID 0x{:x} TRACE_ID 0x{:x} TCP_SEQ {} DATA_SEQ {} TLS {} TimeStamp {}",
+    //                 date_time((*sd).timestamp),
+    //                 proto_tag,
+    //                 (*sd).need_reconfirm,
+    //                 (*sd).direction,
+    //                 (*sd).msg_type,
+    //                 (*sd).process_id,
+    //                 (*sd).thread_id,
+    //                 (*sd).coroutine_id,
+    //                 sd_container_id_safe(sd),
+    //                 (*sd).source,
+    //                 (*sd).socket_role,
+    //                 process_name_safe(sd),
+    //                 flow_info(sd),
+    //                 (*sd).cap_len,
+    //                 (*sd).syscall_len,
+    //                 (*sd).socket_id,
+    //                 (*sd).syscall_trace_id_call,
+    //                 (*sd).tcp_seq,
+    //                 (*sd).cap_seq,
+    //                 (*sd).is_tls,
+    //                 (*sd).timestamp);
+    //        if (*sd).source == 2 {
+    //            print_uprobe_http2_info((*sd).cap_data, (*sd).cap_len);
+    //        } else if (*sd).source == 4 {
+    //            print_io_event_info((*sd).cap_data, (*sd).cap_len);
+    //        } else if (*sd).source == 5 {
+    //            print_uprobe_grpc_dataframe((*sd).cap_data, (*sd).cap_len);
+    //        } else if sk_proto_safe(sd) == SOCK_DATA_OTHER {
+    //            for x in data.into_iter() {
+    //                print!("{} ", format!("{:02x}", x));
+    //            }
+    //        } else {
+    //            for x in data.into_iter() {
+    //                if x < 32 || x > 126 {
+    //                    print!(".");
+    //                    continue;
+    //                }
+    //                let b = x as char;
+    //                print!("{0}", b);
+    //            }
+    //        }
+    //        print!("\x1b[0m\n");
+    //    }
 
-        println!("+ --------------------------------- +\n");
-    }
+    //    println!("+ --------------------------------- +\n");
+    //}
 }
 
 #[allow(dead_code)]
@@ -352,7 +352,7 @@ fn cp_process_name_safe(cp: *mut stack_profile_data) -> String {
 #[allow(dead_code)]
 extern "C" fn continuous_profiler_callback(cp: *mut stack_profile_data) {
     unsafe {
-        process_stack_trace_data_for_flame_graph(cp);
+        //process_stack_trace_data_for_flame_graph(cp);
         increment_counter((*cp).count, 1);
         increment_counter(1, 0);
         //let data = cp_data_str_safe(cp);
@@ -603,20 +603,20 @@ fn main() {
         let stats = socket_tracer_stats();
         print!("{:#?}\n", stats);
 
-        //// enable continuous profiler
-        //if start_continuous_profiler(99, continuous_profiler_callback) != 0 {
-        //    println!("start_continuous_profiler() error.");
-        //    ::std::process::exit(1);
-        //}
+        // enable continuous profiler
+        if start_continuous_profiler(97, 10, 300, continuous_profiler_callback) != 0 {
+            println!("start_continuous_profiler() error.");
+            ::std::process::exit(1);
+        }
 
-        //set_profiler_regex(
-        //    CString::new(
-        //        "^(java|nginx|profiler|telegraf|mysqld|.*deepflow.*|socket_tracer)$".as_bytes(),
-        //    )
-        //    .unwrap()
-        //    .as_c_str()
-        //    .as_ptr(),
-        //);
+        set_profiler_regex(
+            CString::new(
+                "^(mysqld|java|s.*|deepflow-.*)$".as_bytes(),
+            )
+            .unwrap()
+            .as_c_str()
+            .as_ptr(),
+        );
 
         //// CPUID will not be included in the aggregation of stack trace data.
         //set_profiler_cpu_aggregation(0);
