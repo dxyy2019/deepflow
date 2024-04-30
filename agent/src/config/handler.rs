@@ -1413,25 +1413,33 @@ impl TryFrom<(Config, RuntimeConfig)> for ModuleConfig {
                 l7_log_collect_nps_threshold: conf.l7_log_collect_nps_threshold,
                 l7_log_session_aggr_timeout: conf.yaml_config.l7_log_session_aggr_timeout,
                 l7_log_session_slot_capacity: conf.yaml_config.l7_log_session_slot_capacity,
-                l7_log_dynamic: L7LogDynamicConfig::new(
-                    conf.http_log_proxy_client.to_string().to_ascii_lowercase(),
-                    conf.http_log_x_request_id
-                        .split(',')
-                        .map(|x| x.to_lowercase())
-                        .collect(),
-                    conf.http_log_trace_id
+                l7_log_dynamic: {
+                    let trace_ids: Vec<TraceType> = conf
+                        .http_log_trace_id
                         .split(',')
                         .map(|item| TraceType::from(item))
-                        .collect(),
-                    conf.http_log_span_id
-                        .split(',')
-                        .map(|item| TraceType::from(item))
-                        .collect(),
-                    conf.yaml_config
-                        .l7_protocol_advanced_features
-                        .extra_log_fields
-                        .clone(),
-                ),
+                        .collect();
+                    warn!("config: {} parsed: {:?}", conf.http_log_trace_id, trace_ids);
+                    L7LogDynamicConfig::new(
+                        conf.http_log_proxy_client.to_string().to_ascii_lowercase(),
+                        conf.http_log_x_request_id
+                            .split(',')
+                            .map(|x| x.to_lowercase())
+                            .collect(),
+                        conf.http_log_trace_id
+                            .split(',')
+                            .map(|item| TraceType::from(item))
+                            .collect(),
+                        conf.http_log_span_id
+                            .split(',')
+                            .map(|item| TraceType::from(item))
+                            .collect(),
+                        conf.yaml_config
+                            .l7_protocol_advanced_features
+                            .extra_log_fields
+                            .clone(),
+                    )
+                },
                 l7_log_ignore_tap_sides: {
                     let mut tap_sides = [false; TapSide::MAX as usize + 1];
                     for t in conf.l7_log_ignore_tap_sides.iter() {
