@@ -260,7 +260,15 @@ func (u *Unmarshaller) QueueProcess() {
 					u.tableCounter[tableID]++
 
 					u.export(doc)
+					if doc.DataSource() == uint32(config.APPLICATION_MAP_1S) {
+						// log.Info("after1 lizf map_1s: ", doc.String())
+					}
+					doc.AddReferenceCount()
 					u.putStoreQueue(doc)
+					if doc.DataSource() == uint32(config.APPLICATION_MAP_1S) {
+						log.Info("after3 lizf map_1s: ", doc.String())
+						//	doc.Release()
+					}
 				}
 				receiver.ReleaseRecvBuffer(recvBytes)
 			} else if value == nil { // flush ticker

@@ -45,7 +45,7 @@ func (e *ExportDocumentFlow) GetFieldValueByOffsetAndKind(offset uintptr, kind r
 }
 
 func (e *ExportDocumentFlow) Meter() flow_metrics.Meter {
-	return e.Meter()
+	return (*app.DocumentFlow)(e).Meter()
 }
 
 func (e *ExportDocumentFlow) EncodeTo(protocol config.ExportProtocol, utags *utag.UniversalTagsManager, cfg *config.ExporterCfg) (interface{}, error) {
@@ -57,7 +57,7 @@ func (e *ExportDocumentApp) GetFieldValueByOffsetAndKind(offset uintptr, kind re
 }
 
 func (e *ExportDocumentApp) Meter() flow_metrics.Meter {
-	return e.Meter()
+	return (*app.DocumentApp)(e).Meter()
 }
 
 func (e *ExportDocumentApp) EncodeTo(protocol config.ExportProtocol, utags *utag.UniversalTagsManager, cfg *config.ExporterCfg) (interface{}, error) {
@@ -69,7 +69,7 @@ func (e *ExportDocumentUsage) GetFieldValueByOffsetAndKind(offset uintptr, kind 
 }
 
 func (e *ExportDocumentUsage) Meter() flow_metrics.Meter {
-	return e.Meter()
+	return (*app.DocumentUsage)(e).Meter()
 }
 
 func (e *ExportDocumentUsage) EncodeTo(protocol config.ExportProtocol, utags *utag.UniversalTagsManager, cfg *config.ExporterCfg) (interface{}, error) {

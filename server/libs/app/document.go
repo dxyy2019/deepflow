@@ -26,7 +26,10 @@ import (
 	flow_metrics "github.com/deepflowio/deepflow/server/libs/flow-metrics"
 	"github.com/deepflowio/deepflow/server/libs/pool"
 	"github.com/deepflowio/deepflow/server/libs/utils"
+	logging "github.com/op/go-logging"
 )
+
+var log = logging.MustGetLogger("app_doc")
 
 const (
 	VERSION                   = 20220117 // 修改Document的序列化结构时需同步修改此常量
@@ -183,6 +186,9 @@ func (d *DocumentApp) Release() {
 func (d *DocumentApp) WriteBlock(block *ckdb.Block) {
 	d.Tag.WriteBlock(block, d.Timestamp)
 	d.AppMeter.WriteBlock(block)
+	if d.DataSource() == uint32(flow_metrics.APPLICATION_MAP_1S) {
+		log.Infof("lizf write app: %+v ", d.AppMeter)
+	}
 }
 
 func (d *DocumentApp) Meter() flow_metrics.Meter {
