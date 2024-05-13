@@ -70,6 +70,10 @@ struct Opts {
     /// optionally `K8S_POD_IP_FOR_DEEPFLOW` can be set to override ip address.
     #[clap(long)]
     sidecar: bool,
+
+    /// Check privileges under kubernetes
+    #[clap(long)]
+    disable_cgroups: bool,
 }
 
 #[cfg(unix)]
@@ -117,6 +121,7 @@ fn main() -> Result<()> {
             trident::RunningMode::Managed
         },
         opts.sidecar,
+        opts.disable_cgroups,
     )?;
     wait_on_signals();
     t.stop();
