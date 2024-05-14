@@ -227,7 +227,12 @@ fn main() -> Result<(), Box<dyn Error>> {
     make_brpc_proto()?;
     let target_os = env::var("CARGO_CFG_TARGET_OS")?;
     if target_os.as_str() == "linux" {
-        set_build_libtrace()?;
+        if matches!(
+            env::var("CARGO_FEATURE_OFF_CPU"),
+            Err(env::VarError::NotPresent)
+        ) {
+            set_build_libtrace()?;
+        }
         set_linkage()?;
     }
     Ok(())
