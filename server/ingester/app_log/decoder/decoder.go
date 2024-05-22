@@ -44,7 +44,7 @@ var log = logging.MustGetLogger("app_log.decoder")
 
 const (
 	BUFFER_SIZE = 1024
-	SEPARATOR   = ", "
+	LEVEL_LEN   = 4
 )
 
 const (
@@ -289,9 +289,19 @@ func (d *Decoder) WriteAppLog(agentId uint16, l *AppLogEntry) error {
 	case string:
 		s.Body = v
 		// deepflow-server log example: 2024-05-21 19:15:03.488 [ERRO] [tagrecorder] ch_vtap_port.go:620 vtap (464) not found
-		if s.Type == dbwriter.LOG_TYPE_SYSTEM && len(s.Body) > 30 {
-			if StringToSeverity(s.Body[25:29]) != SEVERITY_UNKNOWN {
-				level = s.Body[25:29]
+		// rabbitmq log: 2024-05-22 14:41:21.398338+08:00 [warning] <0.15759.9> closing AMQP connection
+		// alarm log: 2024-05-22 14:41:21,316 T140737347192640-MainThread ERROR trigger.trigger
+		if s.Type == dbwriter.LOG_TYPE_SYSTEM {
+			bodyLen := len(s.Body)
+			for _, startIndex := range []int{26, 34, 52} {
+				if bodyLen <= startIndex+LEVEL_LEN {
+					break
+				}
+				lvl := s.Body[startIndex : startIndex+LEVEL_LEN]
+				if StringToSeverity(lvl) != SEVERITY_UNKNOWN {
+					level = lvl
+					break
+				}
 			}
 		}
 	case map[string]interface{}:
