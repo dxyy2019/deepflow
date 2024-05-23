@@ -102,6 +102,7 @@ func (e *KafkaExporter) Put(items ...interface{}) {
 }
 
 func (e *KafkaExporter) Start() {
+	log.Infof("lizf start exporter3: %+v", e)
 	if e.running {
 		log.Warningf("kafka exporter %d already running", e.index)
 		return

@@ -105,6 +105,7 @@ func NewExporters(cfg *config.Config) *Exporters {
 			continue
 		}
 		exporters = append(exporters, exporter)
+		log.Infof("lizf exporter  len: %d", len(exporters))
 		for _, dataSource := range exporterCfg.DataSources {
 			dataSourceId, err := config.ToDataSourceID(dataSource)
 			if err != nil {
@@ -116,6 +117,7 @@ func NewExporters(cfg *config.Config) *Exporters {
 		}
 	}
 
+	log.Infof("lizf exporter  len2: %d", len(exporters))
 	if len(exporters) == 0 {
 		log.Infof("exporters is disabled")
 		return nil
@@ -136,7 +138,9 @@ func (es *Exporters) Start() {
 	for _, v := range es.universalTagsManagerMap {
 		v.Start()
 	}
+	log.Infof("lizf exporter  len3: %d", len(es.exporters))
 	for _, e := range es.exporters {
+		log.Infof("lizf start exporter2: %+v", e)
 		e.Start()
 	}
 }

@@ -173,6 +173,7 @@ func Start(configPath string, shared *servercommon.ControllerIngesterShared) []i
 
 		exporters := exporters.NewExporters(exportersConfig)
 		if exporters != nil {
+			log.Info("lizf start exporter")
 			exporters.Start()
 			closers = append(closers, exporters)
 		}
