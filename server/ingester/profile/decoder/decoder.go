@@ -92,22 +92,26 @@ type Decoder struct {
 	profileWriter   *dbwriter.ProfileWriter
 	compressionAlgo string
 
+	offCpuSplittingGranularity int
+
 	counter *Counter
 	utils.Closable
 }
 
 func NewDecoder(index int, msgType datatype.MessageType, compressionAlgo string,
+	offCpuSplittingGranularity int,
 	platformData *grpc.PlatformInfoTable,
 	inQueue queue.QueueReader,
 	profileWriter *dbwriter.ProfileWriter) *Decoder {
 	return &Decoder{
-		index:           index,
-		msgType:         msgType,
-		platformData:    platformData,
-		inQueue:         inQueue,
-		profileWriter:   profileWriter,
-		compressionAlgo: compressionAlgo,
-		counter:         &Counter{},
+		index:                      index,
+		msgType:                    msgType,
+		platformData:               platformData,
+		inQueue:                    inQueue,
+		profileWriter:              profileWriter,
+		compressionAlgo:            compressionAlgo,
+		offCpuSplittingGranularity: offCpuSplittingGranularity,
+		counter:                    &Counter{},
 	}
 }
 
@@ -159,15 +163,16 @@ func (d *Decoder) handleProfileData(vtapID uint16, decoder *codec.SimpleDecoder)
 		}
 
 		parser := &Parser{
-			vtapID:          vtapID,
-			inTimestamp:     time.Now(),
-			callBack:        d.profileWriter.Write,
-			platformData:    d.platformData,
-			IP:              make([]byte, len(profile.Ip)),
-			podID:           profile.PodId,
-			compressionAlgo: d.compressionAlgo,
-			observer:        &observer{},
-			Counter:         d.counter,
+			vtapID:                     vtapID,
+			inTimestamp:                time.Now(),
+			callBack:                   d.profileWriter.Write,
+			platformData:               d.platformData,
+			IP:                         make([]byte, len(profile.Ip)),
+			podID:                      profile.PodId,
+			compressionAlgo:            d.compressionAlgo,
+			observer:                   &observer{},
+			offCpuSplittingGranularity: d.offCpuSplittingGranularity,
+			Counter:                    d.counter,
 		}
 		copy(parser.IP, profile.Ip[:len(profile.Ip)])
 

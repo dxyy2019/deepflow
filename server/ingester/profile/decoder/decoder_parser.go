@@ -26,6 +26,7 @@ import (
 
 	"github.com/deepflowio/deepflow/server/ingester/profile/common"
 	"github.com/deepflowio/deepflow/server/ingester/profile/dbwriter"
+	"github.com/deepflowio/deepflow/server/libs/flow-metrics/pb"
 	"github.com/deepflowio/deepflow/server/libs/grpc"
 	"github.com/deepflowio/deepflow/server/libs/utils"
 	"github.com/klauspost/compress/zstd"
@@ -39,7 +40,9 @@ type Parser struct {
 	podID       uint32
 
 	// profileWriter.Write
-	callBack func(interface{})
+	callBack                   func([]interface{})
+	writeItemCache             []interface{}
+	offCpuSplittingGranularity int
 
 	platformData    *grpc.PlatformInfoTable
 	inTimestamp     time.Time
@@ -75,7 +78,7 @@ func (p *Parser) Evaluate(i *storage.PutInput) (storage.SampleObserver, bool) {
 	return p.observer, true
 }
 
-func (p *Parser) stackToInProcess(input *storage.PutInput, stack []string, value uint64) *dbwriter.InProcessProfile {
+func (p *Parser) stackToInProcess(input *storage.PutInput, stack []string, value uint64) []interface{} { // []*dbwriter.InProcessProfile {
 	labels := input.Key.Labels()
 	tagNames := make([]string, 0, len(labels))
 	tagValues := make([]string, 0, len(labels))
@@ -105,9 +108,9 @@ func (p *Parser) stackToInProcess(input *storage.PutInput, stack []string, value
 	location := compress(onelineStack, p.compressionAlgo)
 	atomic.AddInt64(&p.Counter.CompressedSize, int64(len(location)))
 
-	profileValue := value
+	profileValueUs := int64(value)
 	if p.processTracer != nil {
-		profileValue = uint64(p.value)
+		profileValueUs = int64(p.value)
 		pid = p.processTracer.pid
 		stime = p.processTracer.stime
 		eventType = p.processTracer.eventType
@@ -122,7 +125,7 @@ func (p *Parser) stackToInProcess(input *storage.PutInput, stack []string, value
 		eventType,
 		location,
 		p.compressionAlgo,
-		int64(profileValue),
+		profileValueUs,
 		p.inTimestamp,
 		spyMap[input.SpyName],
 		pid,
@@ -130,7 +133,35 @@ func (p *Parser) stackToInProcess(input *storage.PutInput, stack []string, value
 		tagNames,
 		tagValues)
 
-	return ret
+	granularityUs := int64(p.offCpuSplittingGranularity) * int64(time.Second/time.Microsecond)
+	if ret.ProfileEventType == pb.ProfileEventType_EbpfOffCpu.String() &&
+		p.offCpuSplittingGranularity > 0 &&
+		profileValueUs > granularityUs {
+
+		splitCount := profileValueUs / granularityUs
+		if profileValueUs%granularityUs > 0 {
+			splitCount++
+		}
+		for i := int64(0); i < splitCount-1; i++ {
+			splitItem := ret.Clone()
+			splitItem.Time = splitItem.Time + uint32(i)*uint32(p.offCpuSplittingGranularity)
+			splitItem.ProfileCreateTimestamp = splitItem.ProfileCreateTimestamp + i*granularityUs
+			splitItem.ProfileValue = granularityUs
+			p.writeItemCache = append(p.writeItemCache, splitItem)
+		}
+		// test
+		p.writeItemCache = append(p.writeItemCache, ret)
+		ret = ret.Clone()
+		// add ret for last split item
+		ret.Time = ret.Time + uint32(splitCount-1)*uint32(p.offCpuSplittingGranularity)
+		ret.ProfileCreateTimestamp = ret.ProfileCreateTimestamp + (splitCount-1)*granularityUs
+		ret.ProfileValue = profileValueUs - (splitCount-1)*granularityUs
+		p.writeItemCache = append(p.writeItemCache, ret)
+	} else {
+		p.writeItemCache = append(p.writeItemCache, ret)
+	}
+
+	return p.writeItemCache
 }
 
 type observer struct {
