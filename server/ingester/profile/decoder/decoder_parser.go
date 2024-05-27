@@ -34,10 +34,11 @@ import (
 )
 
 type Parser struct {
-	profileName string
-	vtapID      uint16
-	IP          net.IP
-	podID       uint32
+	profileName   string
+	vtapID        uint16
+	orgId, teamId uint16
+	IP            net.IP
+	podID         uint32
 
 	// profileWriter.Write
 	callBack                   func([]interface{})
@@ -78,7 +79,7 @@ func (p *Parser) Evaluate(i *storage.PutInput) (storage.SampleObserver, bool) {
 	return p.observer, true
 }
 
-func (p *Parser) stackToInProcess(input *storage.PutInput, stack []string, value uint64) []interface{} { // []*dbwriter.InProcessProfile {
+func (p *Parser) stackToInProcess(input *storage.PutInput, stack []string, value uint64) []interface{} { // []*dbwriter.InProcessProfile
 	labels := input.Key.Labels()
 	tagNames := make([]string, 0, len(labels))
 	tagValues := make([]string, 0, len(labels))
@@ -120,6 +121,7 @@ func (p *Parser) stackToInProcess(input *storage.PutInput, stack []string, value
 	ret.FillProfile(input,
 		p.platformData,
 		p.vtapID,
+		p.orgId, p.teamId,
 		p.podID,
 		p.profileName,
 		eventType,

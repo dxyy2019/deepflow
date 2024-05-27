@@ -115,7 +115,9 @@ func DocumentExpand(doc app.Document, platformData *grpc.PlatformInfoTable) erro
 	t := doc.Tags()
 	t.SetID("") // 由于需要修改Tag增删Field，清空ID避免字段脏
 
-	t.OrgId, t.TeamID = platformData.QueryVtapOrgAndTeamID(t.VTAPID)
+	if t.OrgId == ckdb.INVALID_ORG_ID || t.TeamID == ckdb.INVALID_TEAM_ID {
+		t.OrgId, t.TeamID = platformData.QueryVtapOrgAndTeamID(t.VTAPID)
+	}
 	// vtap_acl 分钟级数据不用填充
 	if doc.Meter().ID() == flow_metrics.ACL_ID &&
 		t.DatabaseSuffixID() == 1 { // 只有acl后缀

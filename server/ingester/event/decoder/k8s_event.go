@@ -24,6 +24,7 @@ import (
 	pb "github.com/deepflowio/deepflow/message/k8s_event"
 	ingestercommon "github.com/deepflowio/deepflow/server/ingester/common"
 	"github.com/deepflowio/deepflow/server/ingester/event/dbwriter"
+	"github.com/deepflowio/deepflow/server/libs/ckdb"
 	"github.com/deepflowio/deepflow/server/libs/codec"
 	flow_metrics "github.com/deepflowio/deepflow/server/libs/flow-metrics"
 	"github.com/deepflowio/deepflow/server/libs/grpc"
@@ -112,6 +113,11 @@ func (d *Decoder) WriteK8sEvent(vtapId uint16, e *pb.KubernetesEvent) {
 
 	s.AutoInstanceID, s.AutoInstanceType = ingestercommon.GetAutoInstance(s.PodID, s.GProcessID, s.PodNodeID, s.L3DeviceID, uint8(s.L3DeviceType), s.L3EpcID)
 	s.AutoServiceID, s.AutoServiceType = ingestercommon.GetAutoService(s.ServiceID, s.PodGroupID, s.GProcessID, uint32(s.PodClusterID), s.L3DeviceID, uint8(s.L3DeviceType), podGroupType, s.L3EpcID)
+
+	s.OrgId, s.TeamID = d.orgId, d.teamId
+	if s.OrgId == ckdb.INVALID_ORG_ID || s.TeamID == ckdb.INVALID_TEAM_ID {
+		s.OrgId, s.TeamID = d.platformData.QueryVtapOrgAndTeamID(vtapId)
+	}
 
 	d.eventWriter.Write(s)
 }

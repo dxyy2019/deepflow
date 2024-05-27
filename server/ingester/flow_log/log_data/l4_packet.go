@@ -97,7 +97,7 @@ func ReleaseL4Packet(l *L4Packet) {
 	poolL4Packet.Put(l)
 }
 
-func DecodePacketSequence(decoder *codec.SimpleDecoder, vtapID uint16) (*L4Packet, error) {
+func DecodePacketSequence(vtapID, orgId, teamId uint16, decoder *codec.SimpleDecoder) (*L4Packet, error) {
 	l4Packet := AcquireL4Packet()
 	l4Packet.VtapID = vtapID
 	blockSize := decoder.ReadU32()
@@ -111,7 +111,11 @@ func DecodePacketSequence(decoder *codec.SimpleDecoder, vtapID uint16) (*L4Packe
 	l4Packet.StartTime = l4Packet.EndTime - 5*US_TO_S_DEVISOR
 	l4Packet.PacketCount = uint32(endTimePacketCount >> 56)
 	l4Packet.PacketBatch = append(l4Packet.PacketBatch, decoder.ReadBytesN(int(blockSize)-BLOCK_HEAD_SIZE)...)
-	l4Packet.OrgId, l4Packet.TeamID = grpc.QueryVtapOrgAndTeamID(vtapID)
+
+	l4Packet.OrgId, l4Packet.TeamID = orgId, teamId
+	if orgId == ckdb.INVALID_ORG_ID || teamId == ckdb.INVALID_TEAM_ID {
+		l4Packet.OrgId, l4Packet.TeamID = grpc.QueryVtapOrgAndTeamID(vtapID)
+	}
 
 	return l4Packet, nil
 }

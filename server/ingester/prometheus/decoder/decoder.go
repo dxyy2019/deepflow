@@ -30,6 +30,7 @@ import (
 	"github.com/deepflowio/deepflow/server/ingester/common"
 	"github.com/deepflowio/deepflow/server/ingester/prometheus/config"
 	"github.com/deepflowio/deepflow/server/ingester/prometheus/dbwriter"
+	"github.com/deepflowio/deepflow/server/libs/ckdb"
 	"github.com/deepflowio/deepflow/server/libs/codec"
 	"github.com/deepflowio/deepflow/server/libs/datatype"
 	"github.com/deepflowio/deepflow/server/libs/datatype/prompb"
@@ -134,6 +135,8 @@ type Decoder struct {
 	debugEnabled     bool
 	config           *config.Config
 
+	orgId, teamId uint16
+
 	samplesBuilder *PrometheusSamplesBuilder
 
 	counter *Counter
@@ -190,6 +193,7 @@ func (d *Decoder) Run() {
 				continue
 			}
 			decoder.Init(recvBytes.Buffer[recvBytes.Begin:recvBytes.End])
+			d.orgId, d.teamId = uint16(recvBytes.OrgID), uint16(recvBytes.TeamID)
 			d.handlePrometheusData(recvBytes.VtapID, decoder, &decodeBuffer, promWriteRequest, prometheusMetric, extraLabels)
 			receiver.ReleaseRecvBuffer(recvBytes)
 		}
@@ -278,7 +282,7 @@ func (d *Decoder) sendPrometheus(vtapID uint16, ts *prompb.TimeSeries, extraLabe
 		return
 	}
 
-	isSlowItem, err := d.samplesBuilder.TimeSeriesToStore(vtapID, epcId, podClusterId, ts, extraLabels)
+	isSlowItem, err := d.samplesBuilder.TimeSeriesToStore(vtapID, epcId, podClusterId, d.orgId, d.teamId, ts, extraLabels)
 	if !isSlowItem && err != nil {
 		if d.counter.TimeSeriesErr == 0 {
 			log.Warning(err)
@@ -289,8 +293,11 @@ func (d *Decoder) sendPrometheus(vtapID uint16, ts *prompb.TimeSeries, extraLabe
 	builder := d.samplesBuilder
 	if isSlowItem {
 		d.counter.TimeSeriesSlow++
-		orgId, _ := d.samplesBuilder.platformData.QueryVtapOrgAndTeamID(vtapID)
-		d.slowDecodeQueue.Put(AcquireSlowItem(vtapID, epcId, podClusterId, orgId, ts, extraLabels))
+		orgId, teamId := d.orgId, d.teamId
+		if d.orgId == ckdb.INVALID_ORG_ID || d.teamId == ckdb.INVALID_TEAM_ID {
+			orgId, teamId = d.samplesBuilder.platformData.QueryVtapOrgAndTeamID(vtapID)
+		}
+		d.slowDecodeQueue.Put(AcquireSlowItem(vtapID, epcId, podClusterId, orgId, teamId, ts, extraLabels))
 		return
 	}
 	d.prometheusWriter.WriteBatch(builder.samplesBuffer, builder.metricName, builder.timeSeriesBuffer, extraLabels, builder.tsLabelNameIDsBuffer, builder.tsLabelValueIDsBuffer)
@@ -313,14 +320,16 @@ func (b *PrometheusSamplesBuilder) GetEpcPodClusterId(vtapID uint16) (uint16, ui
 // if success,return false,nil
 // if failed, return false,err
 // if isSlow, return true,slowReason
-func (b *PrometheusSamplesBuilder) TimeSeriesToStore(vtapID, epcId, podClusterId uint16, ts *prompb.TimeSeries, extraLabels []prompb.Label) (bool, error) {
+func (b *PrometheusSamplesBuilder) TimeSeriesToStore(vtapID, epcId, podClusterId, orgId, teamID uint16, ts *prompb.TimeSeries, extraLabels []prompb.Label) (bool, error) {
 	if len(ts.Samples) == 0 {
 		b.counter.TimeSeriesInvaild++
 		return false, fmt.Errorf("prometheum samples of time serries(%s) is empty.", ts)
 	}
 	b.counter.TimeSeriesIn++
 
-	orgId, teamID := b.platformData.QueryVtapOrgAndTeamID(vtapID)
+	if orgId == ckdb.INVALID_ORG_ID || teamID == ckdb.INVALID_TEAM_ID {
+		orgId, teamID = b.platformData.QueryVtapOrgAndTeamID(vtapID)
+	}
 
 	b.samplesBuffer = b.samplesBuffer[:0]
 	b.timeSeriesBuffer = ts
