@@ -1039,8 +1039,8 @@ impl MetricServer {
         let external_metric_integration_disabled = self.external_metric_integration_disabled;
         let external_log_integration_disabled = self.external_log_integration_disabled;
         let (tx, mut rx) = mpsc::channel(8);
-        self.runtime
-            .spawn(Self::alive_check(monitor_port.clone(), tx.clone(), mon_rx));
+        // self.runtime
+        //     .spawn(Self::alive_check(monitor_port.clone(), tx.clone(), mon_rx));
         self.server_shutdown_tx.lock().unwrap().replace(tx);
 
         self.thread
