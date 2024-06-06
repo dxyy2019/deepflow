@@ -613,7 +613,7 @@ int exit_runtime_newproc1(struct pt_regs *ctx)
 
 // /sys/kernel/debug/tracing/events/sched/sched_process_exit/format
 SEC("tracepoint/sched/sched_process_exit")
-int bpf_func_sched_process_exit(struct sched_comm_exit_ctx *ctx)
+int df_sched_process_exit(struct sched_comm_exit_ctx *ctx)
 {
 	struct member_fields_offset *offset = retrieve_ready_kern_offset();
 	if (offset == NULL)
@@ -682,7 +682,7 @@ TPPROG(sys_exit_clone) (struct syscall_comm_exit_ctx * ctx) {
 
 // /sys/kernel/debug/tracing/events/sched/sched_process_exec/format
 SEC("tracepoint/sched/sched_process_exec")
-int bpf_func_sched_process_exec(struct sched_comm_exec_ctx *ctx)
+int df_sched_process_exec(struct sched_comm_exec_ctx *ctx)
 {
 	struct member_fields_offset *offset = retrieve_ready_kern_offset();
 	if (offset == NULL)

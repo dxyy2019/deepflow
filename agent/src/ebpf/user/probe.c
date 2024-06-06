@@ -32,7 +32,7 @@ int bpf_get_program_fd(void *obj, const char *name, void **p)
 	struct ebpf_prog *prog;
 
 	/*
-	 * tracepoint: prog->name:bpf_func_sys_exit_recvfrom
+	 * tracepoint: prog->name:df_sys_exit_recvfrom
 	 * kprobe: prog->name:kprobe____sys_sendmsg
 	 */
 	char prog_name[PROBE_NAME_SZ];
@@ -64,7 +64,7 @@ int bpf_get_program_fd(void *obj, const char *name, void **p)
 				__name = p;
 		res =
 		    snprintf((char *)prog_name, sizeof(prog_name),
-			     "bpf_func_%s", __name);
+			     "df_%s", __name);
 		if (res < 0 || res >= sizeof(prog_name)) {
 			ebpf_warning("name (%s) snprintf() failed.\n", __name);
 			return -1;
@@ -201,7 +201,7 @@ struct ebpf_link *program__attach_tracepoint(void *prog)
 {
 	// e.g.:
 	// sec_name:  "tracepoint/syscalls/sys_enter_write"
-	// prog name: "bpf_func_sys_enter_write"
+	// prog name: "df_sys_enter_write"
 
 	char *sec_name, *category, *name;
 	int len, pfd;

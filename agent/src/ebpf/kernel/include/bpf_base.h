@@ -256,12 +256,12 @@ _Pragma("GCC error \"PT_GO_REGS_PARM\"");
 
 #define NAME(N)  __##N
 
-#define PROGTP(F) SEC("prog/tp/"__stringify(F)) int bpf_prog_tp__##F
-#define PROGKP(F) SEC("prog/kp/"__stringify(F)) int bpf_prog_kp__##F
+#define PROGTP(F) SEC("prog/tp/"__stringify(F)) int df_tp__##F
+#define PROGKP(F) SEC("prog/kp/"__stringify(F)) int df_kp__##F
 #define KRETPROG(F) SEC("kretprobe/"__stringify(F)) int kretprobe__##F
 #define KPROG(F) SEC("kprobe/"__stringify(F)) int kprobe__##F
-#define TPPROG(F) SEC("tracepoint/syscalls/"__stringify(F)) int bpf_func_##F
-#define TP_SCHED_PROG(F) SEC("tracepoint/sched/"__stringify(F)) int bpf_func_##F
+#define TPPROG(F) SEC("tracepoint/syscalls/"__stringify(F)) int df_##F
+#define TP_SCHED_PROG(F) SEC("tracepoint/sched/"__stringify(F)) int df_##F
 
 #ifndef CUR_CPU_IDENTIFIER
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 8, 0)
