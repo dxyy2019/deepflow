@@ -11,6 +11,7 @@
 * feat: CK’s username and password support the use of special characters [#7229](https://github.com/deepflowio/deepflow/pull/7119)
 
 #### Bug Fix
+* fix: querier filter error when tag is x_request_id and syscall_trace_id [#8090](https://github.com/deepflowio/deepflow/pull/8090) by [xiaochaoren1](https://github.com/xiaochaoren1)
 * fix: restart agent after enabling ntp [#7657](https://github.com/deepflowio/deepflow/pull/7657) by [yuanchaoa](https://github.com/yuanchaoa)
 * fix: need to drop deepflow_tenant/admin database when drop an organization [#7649](https://github.com/deepflowio/deepflow/pull/7649) by [lzf575](https://github.com/lzf575)
 * fix: agent - eBPF Fix Kafka protocol inference [#7644](https://github.com/deepflowio/deepflow/pull/7644) by [yinjiping](https://github.com/yinjiping)
@@ -88,6 +89,7 @@
 **[Changelog for v6.5](https://www.deepflow.io/docs/release-notes/release-6.5-ce)**<br/>
 
 #### NEW FEATURE
+* feat: agent - eBPF Add Command for datadump [#8083](https://github.com/deepflowio/deepflow/pull/8083) by [yinjiping](https://github.com/yinjiping)
 * feat: agent - eBPF Improve aggregation efficiency of stack-trace string  [#7663](https://github.com/deepflowio/deepflow/pull/7663) by [yinjiping](https://github.com/yinjiping)
 * feat: add request type from Kafka trace map [#7642](https://github.com/deepflowio/deepflow/pull/7642) by [lzf575](https://github.com/lzf575)
 * feat: server - Add configuration items to server [#7630](https://github.com/deepflowio/deepflow/pull/7630) by [yuanchaoa](https://github.com/yuanchaoa)
