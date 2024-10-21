@@ -8,6 +8,8 @@
 ### <a id="main"></a>DeepFlow release main
 
 #### Bug Fix
+* fix: fix bug in some vtap exception translation [#8346](https://github.com/deepflowio/deepflow/pull/8346) by [SongZhen0704](https://github.com/SongZhen0704)
+* fix: fix bug in vtap exception translation [#8344](https://github.com/deepflowio/deepflow/pull/8344) by [SongZhen0704](https://github.com/SongZhen0704)
 * fix: org log record [#7674](https://github.com/deepflowio/deepflow/pull/7674) by [jin-xiaofeng](https://github.com/jin-xiaofeng)
 * fix: in flow tag, field value type of int value should be `int` [#7671](https://github.com/deepflowio/deepflow/pull/7671) by [lzf575](https://github.com/lzf575)
 * fix: restart agent after enabling ntp [#7661](https://github.com/deepflowio/deepflow/pull/7661) by [yuanchaoa](https://github.com/yuanchaoa)
@@ -104,6 +106,7 @@
 * Fix prometheus data cannot be labeled with universal tags，if slow-decoder is used. [#7100](https://github.com/deepflowio/deepflow/pull/7100)
 
 #### NEW FEATURE
+* feat: support same pron in extra-filters [#8339](https://github.com/deepflowio/deepflow/pull/8339) by [taloric](https://github.com/taloric)
 * feat: agent - eBPF Improve aggregation efficiency of stack-trace string [#7655](https://github.com/deepflowio/deepflow/pull/7655) by [yinjiping](https://github.com/yinjiping)
 * feat: Table alert_event add tags and modify metric_value function error #26054 [#7652](https://github.com/deepflowio/deepflow/pull/7652) by [Ericsssss](https://github.com/Ericsssss)
 * feat: agent add syscall_trace_id_disabled [#7547](https://github.com/deepflowio/deepflow/pull/7547) by [TomatoMr](https://github.com/TomatoMr)

@@ -11,6 +11,8 @@
 * feat: CK’s username and password support the use of special characters [#7229](https://github.com/deepflowio/deepflow/pull/7119)
 
 #### Bug Fix
+* fix: fix bug in some vtap exception translation [#8347](https://github.com/deepflowio/deepflow/pull/8347) by [SongZhen0704](https://github.com/SongZhen0704)
+* fix: fix bug in vtap exception translation [#8345](https://github.com/deepflowio/deepflow/pull/8345) by [SongZhen0704](https://github.com/SongZhen0704)
 * fix: restart agent after enabling ntp [#7657](https://github.com/deepflowio/deepflow/pull/7657) by [yuanchaoa](https://github.com/yuanchaoa)
 * fix: need to drop deepflow_tenant/admin database when drop an organization [#7649](https://github.com/deepflowio/deepflow/pull/7649) by [lzf575](https://github.com/lzf575)
 * fix: agent - eBPF Fix Kafka protocol inference [#7644](https://github.com/deepflowio/deepflow/pull/7644) by [yinjiping](https://github.com/yinjiping)
