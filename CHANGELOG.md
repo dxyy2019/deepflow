@@ -104,6 +104,7 @@
 * Fix prometheus data cannot be labeled with universal tags，if slow-decoder is used. [#7100](https://github.com/deepflowio/deepflow/pull/7100)
 
 #### NEW FEATURE
+* feat: agent - eBPF Support for the ARM version of Kylin v10 SP2 [#8439](https://github.com/deepflowio/deepflow/pull/8439) by [yinjiping](https://github.com/yinjiping)
 * feat: agent - eBPF Improve aggregation efficiency of stack-trace string [#7655](https://github.com/deepflowio/deepflow/pull/7655) by [yinjiping](https://github.com/yinjiping)
 * feat: Table alert_event add tags and modify metric_value function error #26054 [#7652](https://github.com/deepflowio/deepflow/pull/7652) by [Ericsssss](https://github.com/Ericsssss)
 * feat: agent add syscall_trace_id_disabled [#7547](https://github.com/deepflowio/deepflow/pull/7547) by [TomatoMr](https://github.com/TomatoMr)
