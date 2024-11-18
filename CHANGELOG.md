@@ -8,6 +8,8 @@
 ### <a id="main"></a>DeepFlow release main
 
 #### Bug Fix
+* fix: Agent crash and misaligned read/write [#8506](https://github.com/deepflowio/deepflow/pull/8506) by [rvql](https://github.com/rvql)
+* fix: panic when migrating vtap_group_configuration [#8505](https://github.com/deepflowio/deepflow/pull/8505) by [ZhengYa-0110](https://github.com/ZhengYa-0110)
 * fix: org log record [#7674](https://github.com/deepflowio/deepflow/pull/7674) by [jin-xiaofeng](https://github.com/jin-xiaofeng)
 * fix: in flow tag, field value type of int value should be `int` [#7671](https://github.com/deepflowio/deepflow/pull/7671) by [lzf575](https://github.com/lzf575)
 * fix: restart agent after enabling ntp [#7661](https://github.com/deepflowio/deepflow/pull/7661) by [yuanchaoa](https://github.com/yuanchaoa)
@@ -104,6 +106,8 @@
 * Fix prometheus data cannot be labeled with universal tags，if slow-decoder is used. [#7100](https://github.com/deepflowio/deepflow/pull/7100)
 
 #### NEW FEATURE
+* feature: migrates vtap_group_config table [#8492](https://github.com/deepflowio/deepflow/pull/8492) by [ZhengYa-0110](https://github.com/ZhengYa-0110)
+* feat: agent - eBPF Set the full path for file reading and writing [#8486](https://github.com/deepflowio/deepflow/pull/8486) by [yinjiping](https://github.com/yinjiping)
 * feat: agent - eBPF Improve aggregation efficiency of stack-trace string [#7655](https://github.com/deepflowio/deepflow/pull/7655) by [yinjiping](https://github.com/yinjiping)
 * feat: Table alert_event add tags and modify metric_value function error #26054 [#7652](https://github.com/deepflowio/deepflow/pull/7652) by [Ericsssss](https://github.com/Ericsssss)
 * feat: agent add syscall_trace_id_disabled [#7547](https://github.com/deepflowio/deepflow/pull/7547) by [TomatoMr](https://github.com/TomatoMr)
